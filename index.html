@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fantasy Draft Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- ─── HEADER ─── -->
+  <header id="header">
+    <div class="header-left">
+      <h1 class="logo">Fantasy Draft Board</h1>
+      <div id="clock-status" class="clock-status"></div>
+    </div>
+    <nav id="header-nav" class="header-nav">
+      <!-- Buttons injected by JS based on draft state -->
+    </nav>
+  </header>
+
+  <!-- ─── DRAFT BOARD ─── -->
+  <main id="board-container" class="board-container">
+    <table id="draft-board">
+      <thead id="board-head"></thead>
+      <tbody id="board-body"></tbody>
+    </table>
+  </main>
+
+  <!-- ─── ON THE CLOCK BANNER ─── -->
+  <div id="on-the-clock" class="on-the-clock hidden">
+    <div class="otc-inner">
+      <div class="otc-meta">
+        <span id="otc-pick-num"></span>
+      </div>
+      <div id="otc-team" class="otc-team"></div>
+      <div id="otc-timer" class="otc-timer">0:00</div>
+      <button id="otc-draft-btn" class="btn btn-gold">Draft Player</button>
+    </div>
+  </div>
+
+  <!-- ─── MODAL BACKDROP ─── -->
+  <div id="modal-backdrop" class="modal-backdrop hidden">
+    <div id="modal" class="modal" role="dialog">
+      <div class="modal-header">
+        <h2 id="modal-title"></h2>
+        <button id="modal-close" class="modal-close">&times;</button>
+      </div>
+      <div id="modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- ─── FIREBASE ─── -->
+  <!--
+    SETUP INSTRUCTIONS:
+    1. Go to https://console.firebase.google.com
+    2. Create a project (e.g. "fantasy-draft-board")
+    3. Add a Web App and copy your config
+    4. Enable Realtime Database (start in test mode for now)
+    5. Replace the firebaseConfig below with your values
+  -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyBF6WYqL4n2yiuVSDthb-Yt9E8VEyrHl3U",
+        authDomain: "stamperleaguedraftboard.firebaseapp.com",
+        projectId: "stamperleaguedraftboard",
+        storageBucket: "stamperleaguedraftboard.firebasestorage.app",
+        messagingSenderId: "11449370579",
+        appId: "1:11449370579:web:62b713a0d4b3a1ddd55126"
+      };
+
+    firebase.initializeApp(firebaseConfig);
+    window.db = firebase.database();
+  </script>
+
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/firebase-sync.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/modals.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
