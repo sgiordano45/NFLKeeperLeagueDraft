@@ -5,8 +5,8 @@ const CONFIG = {
   KEEPERS_PER_TEAM: 2,
 
   DEFAULT_TEAMS: [
-    "Team 1", "Team 2", "Team 3", "Team 4", "Team 5", "Team 6",
-    "Team 7", "Team 8", "Team 9", "Team 10", "Team 11", "Team 12"
+    "Geo", "Stephen", "Popson", "JP", "KevTra", "Scott",
+    "Slim Jim", "Drew", "Kipp", "Joey", "Hughes", "Weaver"
   ],
 
   TEAM_COLORS: [
