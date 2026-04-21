@@ -39,8 +39,7 @@ header {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 100;
 }
 
@@ -134,40 +133,61 @@ header {
   width: 100%;
 }
 
-#draft-board th {
+/* Column headers: team names */
+.team-col-header {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 8px 4px 6px;
+  text-align: center;
+  white-space: nowrap;
+  min-width: 110px;
+}
+
+/* Top-left "Rd" header + round labels on left */
+.round-header {
   font-family: var(--font-display);
   font-size: 11px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 1px;
-  padding: 6px 4px;
+  padding: 6px 10px;
   text-align: center;
+  min-width: 50px;
   position: sticky;
-  top: 58px;
-  background: var(--bg-deep);
-  z-index: 10;
-}
-
-#draft-board th:first-child {
-  text-align: left;
-  padding-left: 12px;
-  min-width: 130px;
   left: 0;
   z-index: 15;
+  background: var(--bg-deep);
 }
 
-.team-label {
+.round-label {
   position: sticky;
   left: 0;
   z-index: 5;
   background: var(--bg-deep);
   font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: .5px;
-  padding: 4px 12px;
+  padding: 4px 10px;
+  text-align: center;
   white-space: nowrap;
+}
+
+/* Sticky team header row */
+#draft-board thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-deep);
+  z-index: 20;
+}
+
+#draft-board thead th.round-header {
+  z-index: 25;
 }
 
 /* ─── PICK CELLS ─── */
@@ -282,6 +302,17 @@ header {
   justify-content: center;
   font-size: 9px;
   color: rgba(255,255,255,.1);
+}
+
+/* ─── POSITION TAG ─── */
+.pick-pos-tag {
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: rgba(255,255,255,.55);
+  margin-bottom: 1px;
 }
 
 /* ─── ON THE CLOCK BANNER ─── */
@@ -573,6 +604,7 @@ header {
   .board-container { padding: 8px 4px 100px; }
   .pick { min-width: 88px; height: 48px; }
   .pick-player { font-size: 9px; }
+  .team-col-header { font-size: 10px; min-width: 90px; }
   .otc-inner { padding: 10px 16px; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .modal { padding: 20px; }
 }

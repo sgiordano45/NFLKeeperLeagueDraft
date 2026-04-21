@@ -14,6 +14,33 @@ const CONFIG = {
     "#6A0572", "#1B998B", "#FF6B35", "#004E89", "#A23B72", "#C18C5D"
   ],
 
+  // Position colors for drafted players
+  POSITION_COLORS: {
+    QB:  { bg: "#5C1D91", text: "#E8D0FF" },  // Purple
+    RB:  { bg: "#1A6B3C", text: "#C8F7D8" },  // Green
+    WR:  { bg: "#1565C0", text: "#BBDEFB" },  // Blue
+    TE:  { bg: "#BF360C", text: "#FFCCBC" },  // Orange-red
+    K:   { bg: "#4E342E", text: "#D7CCC8" },  // Brown
+    DEF: { bg: "#37474F", text: "#CFD8DC" },  // Steel
+    DST: { bg: "#37474F", text: "#CFD8DC" },  // Alias for DEF
+  },
+
+  // Parse "Player Name, POS" → { name, pos }
+  parsePlayer(str) {
+    if (!str) return { name: str, pos: null };
+    const match = str.match(/^(.+?),\s*(QB|RB|WR|TE|K|DEF|DST)\s*$/i);
+    if (match) {
+      return { name: match[1].trim(), pos: match[2].toUpperCase() };
+    }
+    return { name: str, pos: null };
+  },
+
+  // Get color for a position
+  posColor(pos) {
+    if (!pos) return null;
+    return this.POSITION_COLORS[pos.toUpperCase()] || null;
+  },
+
   // Firebase path for this draft
   DRAFT_YEAR: "2026",
   get FB_PATH() { return `drafts/${this.DRAFT_YEAR}`; },

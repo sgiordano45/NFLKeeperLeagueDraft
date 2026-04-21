@@ -1,6 +1,9 @@
 // ─── UI Rendering ───
 // Pure rendering functions that read from State and update the DOM.
 // No state mutations happen here.
+//
+// Board layout: COLUMNS = teams, ROWS = rounds
+// This is the classic "draft board on the wall" orientation.
 
 const UI = {
   render() {
@@ -52,31 +55,31 @@ const UI = {
     }
   },
 
-  // ─── DRAFT BOARD ───
+  // ─── DRAFT BOARD (flipped: rounds = rows, teams = columns) ───
   renderBoard() {
     const thead = document.getElementById("board-head");
     const tbody = document.getElementById("board-body");
 
-    // Header row
-    let headHTML = `<tr><th>Team</th>`;
-    for (let r = 1; r <= CONFIG.NUM_ROUNDS; r++) {
-      headHTML += `<th>Rd ${r}</th>`;
-    }
+    // Header row: team names across the top
+    let headHTML = `<tr><th class="round-header">Rd</th>`;
+    State.teams.forEach((team, tIdx) => {
+      const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
+      headHTML += `<th class="team-col-header" style="color:${color};border-top:3px solid ${color}">${this.esc(team)}</th>`;
+    });
     headHTML += `</tr>`;
     thead.innerHTML = headHTML;
 
-    // Body rows — one per team
+    // Body: one row per round
     let bodyHTML = "";
-    State.teams.forEach((team, tIdx) => {
-      const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
+    for (let r = 1; r <= CONFIG.NUM_ROUNDS; r++) {
       bodyHTML += `<tr>`;
-      bodyHTML += `<td class="team-label" style="color:${color};border-left:3px solid ${color}">${this.esc(team)}</td>`;
+      bodyHTML += `<td class="round-label">Rd ${r}</td>`;
 
-      for (let r = 1; r <= CONFIG.NUM_ROUNDS; r++) {
+      State.teams.forEach((team, tIdx) => {
         const pick = State.pickForTeamRound(team, r);
         if (!pick) {
           bodyHTML += `<td class="pick-cell"><div class="pick-no-owner">—</div></td>`;
-          continue;
+          return;
         }
 
         const pickIdx = State.picks.indexOf(pick);
@@ -90,14 +93,31 @@ const UI = {
         if (filled) classes += " is-filled";
         if (isKeeper) classes += " is-keeper";
 
-        const bg = filled
-          ? isKeeper
-            ? `linear-gradient(135deg, ${color}cc, ${color}88)`
-            : `${color}bb`
-          : "";
+        // Determine background color: position-based if filled, otherwise empty
+        let bg = "";
+        let playerTextColor = "#fff";
+        const parsed = filled ? CONFIG.parsePlayer(pick.player) : null;
+
+        if (filled && parsed && parsed.pos) {
+          const posCol = CONFIG.posColor(parsed.pos);
+          if (posCol) {
+            bg = isKeeper
+              ? `linear-gradient(135deg, ${posCol.bg}, ${posCol.bg}cc)`
+              : posCol.bg;
+            playerTextColor = posCol.text;
+            classes += ` pos-${parsed.pos.toLowerCase()}`;
+          }
+        } else if (filled) {
+          // No position — fall back to team color
+          const teamColor = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
+          bg = isKeeper
+            ? `linear-gradient(135deg, ${teamColor}cc, ${teamColor}88)`
+            : `${teamColor}bb`;
+        }
 
         const borderColor = filled && !isCurrent ? "transparent" : "";
-        const keeperBorder = !filled && isKeeper ? `border-color:${color}66` : "";
+        const teamColor = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
+        const keeperBorder = !filled && isKeeper ? `border-color:${teamColor}66` : "";
 
         let style = "";
         if (bg) style += `background:${bg};`;
@@ -110,7 +130,12 @@ const UI = {
         }
 
         if (filled) {
-          inner += `<span class="pick-player">${this.esc(pick.player)}</span>`;
+          if (parsed && parsed.pos) {
+            inner += `<span class="pick-pos-tag">${parsed.pos}</span>`;
+            inner += `<span class="pick-player" style="color:${playerTextColor}">${this.esc(parsed.name)}</span>`;
+          } else {
+            inner += `<span class="pick-player">${this.esc(pick.player)}</span>`;
+          }
           if (traded) {
             inner += `<span class="pick-via">via ${this.esc(pick.originalOwner)}</span>`;
           }
@@ -122,9 +147,10 @@ const UI = {
         const onclick = (!filled && State.draftStarted) ? `onclick="Modals.openDraftAt(${pickIdx})"` : "";
 
         bodyHTML += `<td class="pick-cell"><div class="${classes}" style="${style}" ${onclick}>${inner}</div></td>`;
-      }
+      });
+
       bodyHTML += `</tr>`;
-    });
+    }
 
     tbody.innerHTML = bodyHTML;
   },
