@@ -1,6 +1,22 @@
 // ─── Application Entry Point ───
 const App = {
+  _initialized: false,
+
+  async boot() {
+    // Auth initializes first — waits for Firebase auth state
+    await Auth.init();
+    // If user is already signed in, Auth._showApp() will call App.init()
+    // If not, login screen stays visible
+  },
+
   async init() {
+    // Prevent double-init from auth state changes
+    if (this._initialized) {
+      UI.render();
+      return;
+    }
+    this._initialized = true;
+
     // Initialize state with defaults
     State.init();
 
@@ -26,14 +42,17 @@ const App = {
 
     // Wire up the OTC draft button
     document.getElementById("otc-draft-btn").addEventListener("click", () => {
-      Modals.openDraft();
+      if (Auth.canDraftCurrentPick()) {
+        Modals.openDraft();
+      }
     });
 
-    console.log("Fantasy Draft Board initialized.");
+    console.log(`Fantasy Draft Board initialized. Role: ${Auth.role}`);
   },
 
   startDraft() {
-    // Find first unfilled pick
+    if (!Auth.canAdmin()) return;
+
     let firstOpen = -1;
     for (let i = 0; i < State.picks.length; i++) {
       if (!State.picks[i].player) { firstOpen = i; break; }
@@ -50,14 +69,13 @@ const App = {
       currentPickIndex: firstOpen,
     });
 
-    // Start timer for the first pick's team
     Timer.start(State.picks[firstOpen].currentOwner);
-
     setTimeout(() => UI.scrollToCurrent(), 300);
   },
 
   undoLast() {
-    // Find last drafted non-keeper pick
+    if (!Auth.canAdmin()) return;
+
     let lastIdx = -1;
     for (let i = State.picks.length - 1; i >= 0; i--) {
       if (State.picks[i].player && !State.picks[i].isKeeper) {
@@ -80,11 +98,11 @@ const App = {
       timerData: { ...State.timerData },
     });
 
-    // Restart timer for the restored pick
     Timer.start(newPicks[lastIdx].currentOwner);
   },
 
   resetDraft() {
+    if (!Auth.canAdmin()) return;
     if (!confirm("Reset entire draft? This will erase all picks, keepers, and trades. This cannot be undone.")) return;
 
     Timer.stop();
@@ -94,4 +112,4 @@ const App = {
 };
 
 // ─── Boot ───
-document.addEventListener("DOMContentLoaded", () => App.init());
+document.addEventListener("DOMContentLoaded", () => App.boot());

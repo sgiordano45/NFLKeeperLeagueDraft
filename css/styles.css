@@ -594,6 +594,187 @@ header {
 .mb-8 { margin-bottom: 8px; }
 .gap-8 { gap: 8px; }
 
+/* ─── LOGIN SCREEN ─── */
+.login-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.login-screen.hidden { display: none !important; }
+
+.login-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 48px 40px;
+  text-align: center;
+  max-width: 400px;
+  width: 90vw;
+  box-shadow: 0 0 60px rgba(255,193,7,.08);
+}
+
+.login-logo {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  background: linear-gradient(90deg, var(--gold), #ffaa00);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 32px;
+}
+
+.btn-google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 28px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s ease;
+  width: 100%;
+}
+.btn-google:hover { background: #f0f0f0; box-shadow: 0 2px 12px rgba(0,0,0,.15); }
+.btn-google:active { transform: scale(.98); }
+
+.login-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 24px;
+  margin-bottom: 8px;
+}
+
+.login-spectator-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  width: 100%;
+  font-size: 12px;
+}
+
+/* ─── USER BAR ─── */
+.user-bar {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 6px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 99;
+}
+
+.user-bar.hidden { display: none !important; }
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+}
+
+.user-name {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.user-role-badge {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 2px 10px;
+  border-radius: 4px;
+}
+
+.role-commissioner {
+  background: var(--gold);
+  color: #111;
+}
+
+.role-owner {
+  background: var(--success);
+  color: #fff;
+}
+
+.role-spectator {
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+
+/* ─── TEAM OWNER NAME (under team label on board) ─── */
+.team-owner-name {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  margin-top: 1px;
+}
+
+/* Highlight my team's row */
+.team-label.my-team {
+  background: rgba(42,157,143,.08) !important;
+}
+
+/* ─── CLAIM STATUS ─── */
+.claim-status {
+  font-family: var(--font-display);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.claimed-mine {
+  background: var(--success);
+  color: #fff;
+}
+
+.claimed-other {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+
+.unclaimed {
+  background: transparent;
+  border: 1px dashed var(--border);
+  color: var(--text-muted);
+}
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
   header { padding: 10px 12px; }
@@ -607,4 +788,6 @@ header {
   .team-col-header { font-size: 10px; min-width: 90px; }
   .otc-inner { padding: 10px 16px; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .modal { padding: 20px; }
+  .login-card { padding: 32px 24px; }
+  .user-bar { padding: 6px 12px; }
 }

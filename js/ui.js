@@ -1,9 +1,7 @@
 // ─── UI Rendering ───
 // Pure rendering functions that read from State and update the DOM.
-// No state mutations happen here.
-//
-// Board layout: COLUMNS = teams, ROWS = rounds
-// This is the classic "draft board on the wall" orientation.
+// Buttons are gated by Auth.role: commissioner sees everything,
+// owners see their own controls, spectators see view-only.
 
 const UI = {
   render() {
@@ -18,15 +16,32 @@ const UI = {
     const status = document.getElementById("clock-status");
     nav.innerHTML = "";
 
+    const isAdmin = Auth.canAdmin();
+
     if (!State.draftStarted) {
-      nav.innerHTML = `
-        <button class="btn" onclick="Modals.openTeams()">Teams</button>
-        <button class="btn" onclick="Modals.openTrade()">Trade Picks</button>
-        <button class="btn" onclick="Modals.openKeepers()">Keepers</button>
-        <button class="btn btn-gold" onclick="App.startDraft()">Start Draft</button>
-        <button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>
-      `;
+      let buttons = "";
+
+      if (isAdmin) {
+        buttons += `
+          <button class="btn" onclick="Modals.openTeams()">Teams</button>
+          <button class="btn" onclick="Modals.openTrade()">Trade Picks</button>
+          <button class="btn" onclick="Modals.openKeepers()">Keepers</button>
+          <button class="btn btn-gold" onclick="App.startDraft()">Start Draft</button>
+          <button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>
+        `;
+      }
+
+      if (Auth.user && !Auth.isCommissioner()) {
+        buttons += `<button class="btn" onclick="Modals.openClaimTeam()">Claim Team</button>`;
+      }
+
+      if (isAdmin) {
+        buttons += `<button class="btn" onclick="Modals.openManageClaims()">Manage Owners</button>`;
+      }
+
+      nav.innerHTML = buttons;
       status.innerHTML = "";
+
     } else if (!State.draftComplete) {
       const p = State.currentPick;
       if (p) {
@@ -37,49 +52,78 @@ const UI = {
           on the clock
         `;
       }
-      nav.innerHTML = `
-        <button class="btn btn-gold" onclick="Modals.openDraft()">Draft Player</button>
-        <button class="btn" onclick="App.undoLast()">Undo</button>
-        <button class="btn" onclick="Modals.openHistory()">History</button>
-        <button class="btn" onclick="Modals.openTimerSummary()">Timer</button>
-        <button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>
-      `;
+
+      let buttons = "";
+
+      if (Auth.canDraftCurrentPick()) {
+        buttons += `<button class="btn btn-gold" onclick="Modals.openDraft()">Draft Player</button>`;
+      }
+
+      if (isAdmin) {
+        buttons += `<button class="btn" onclick="App.undoLast()">Undo</button>`;
+      }
+
+      buttons += `<button class="btn" onclick="Modals.openHistory()">History</button>`;
+      buttons += `<button class="btn" onclick="Modals.openTimerSummary()">Timer</button>`;
+
+      if (isAdmin) {
+        buttons += `<button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>`;
+      }
+
+      nav.innerHTML = buttons;
+
     } else {
       status.innerHTML = `<span class="draft-complete-text">Draft Complete</span>`;
-      nav.innerHTML = `
+
+      let buttons = `
         <button class="btn" onclick="Modals.openHistory()">History</button>
         <button class="btn" onclick="Modals.openTimerSummary()">Timer</button>
-        <button class="btn" onclick="App.undoLast()">Undo Last</button>
-        <button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>
       `;
+
+      if (isAdmin) {
+        buttons += `
+          <button class="btn" onclick="App.undoLast()">Undo Last</button>
+          <button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>
+        `;
+      }
+
+      nav.innerHTML = buttons;
     }
   },
 
-  // ─── DRAFT BOARD (flipped: rounds = rows, teams = columns) ───
+  // ─── DRAFT BOARD ───
   renderBoard() {
     const thead = document.getElementById("board-head");
     const tbody = document.getElementById("board-body");
 
-    // Header row: team names across the top
-    let headHTML = `<tr><th class="round-header">Rd</th>`;
-    State.teams.forEach((team, tIdx) => {
-      const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
-      headHTML += `<th class="team-col-header" style="color:${color};border-top:3px solid ${color}">${this.esc(team)}</th>`;
-    });
+    let headHTML = `<tr><th>Team</th>`;
+    for (let r = 1; r <= CONFIG.NUM_ROUNDS; r++) {
+      headHTML += `<th>Rd ${r}</th>`;
+    }
     headHTML += `</tr>`;
     thead.innerHTML = headHTML;
 
-    // Body: one row per round
     let bodyHTML = "";
-    for (let r = 1; r <= CONFIG.NUM_ROUNDS; r++) {
-      bodyHTML += `<tr>`;
-      bodyHTML += `<td class="round-label">Rd ${r}</td>`;
+    State.teams.forEach((team, tIdx) => {
+      const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
+      const ownerName = Auth.getTeamOwnerName(team);
+      const isMyTeam = Auth.claimedTeam === team;
 
-      State.teams.forEach((team, tIdx) => {
+      let teamLabel = `<span>${this.esc(team)}</span>`;
+      if (ownerName) {
+        teamLabel += `<span class="team-owner-name">${this.esc(ownerName)}</span>`;
+      }
+
+      const myTeamClass = isMyTeam ? " my-team" : "";
+
+      bodyHTML += `<tr>`;
+      bodyHTML += `<td class="team-label${myTeamClass}" style="color:${color};border-left:3px solid ${color}">${teamLabel}</td>`;
+
+      for (let r = 1; r <= CONFIG.NUM_ROUNDS; r++) {
         const pick = State.pickForTeamRound(team, r);
         if (!pick) {
           bodyHTML += `<td class="pick-cell"><div class="pick-no-owner">—</div></td>`;
-          return;
+          continue;
         }
 
         const pickIdx = State.picks.indexOf(pick);
@@ -93,31 +137,14 @@ const UI = {
         if (filled) classes += " is-filled";
         if (isKeeper) classes += " is-keeper";
 
-        // Determine background color: position-based if filled, otherwise empty
-        let bg = "";
-        let playerTextColor = "#fff";
-        const parsed = filled ? CONFIG.parsePlayer(pick.player) : null;
-
-        if (filled && parsed && parsed.pos) {
-          const posCol = CONFIG.posColor(parsed.pos);
-          if (posCol) {
-            bg = isKeeper
-              ? `linear-gradient(135deg, ${posCol.bg}, ${posCol.bg}cc)`
-              : posCol.bg;
-            playerTextColor = posCol.text;
-            classes += ` pos-${parsed.pos.toLowerCase()}`;
-          }
-        } else if (filled) {
-          // No position — fall back to team color
-          const teamColor = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
-          bg = isKeeper
-            ? `linear-gradient(135deg, ${teamColor}cc, ${teamColor}88)`
-            : `${teamColor}bb`;
-        }
+        const bg = filled
+          ? isKeeper
+            ? `linear-gradient(135deg, ${color}cc, ${color}88)`
+            : `${color}bb`
+          : "";
 
         const borderColor = filled && !isCurrent ? "transparent" : "";
-        const teamColor = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
-        const keeperBorder = !filled && isKeeper ? `border-color:${teamColor}66` : "";
+        const keeperBorder = !filled && isKeeper ? `border-color:${color}66` : "";
 
         let style = "";
         if (bg) style += `background:${bg};`;
@@ -125,32 +152,25 @@ const UI = {
         if (keeperBorder) style += keeperBorder + ";";
 
         let inner = "";
-        if (isKeeper) {
-          inner += `<span class="keeper-badge">K</span>`;
-        }
+        if (isKeeper) inner += `<span class="keeper-badge">K</span>`;
 
         if (filled) {
-          if (parsed && parsed.pos) {
-            inner += `<span class="pick-pos-tag">${parsed.pos}</span>`;
-            inner += `<span class="pick-player" style="color:${playerTextColor}">${this.esc(parsed.name)}</span>`;
-          } else {
-            inner += `<span class="pick-player">${this.esc(pick.player)}</span>`;
-          }
-          if (traded) {
-            inner += `<span class="pick-via">via ${this.esc(pick.originalOwner)}</span>`;
-          }
+          inner += `<span class="pick-player">${this.esc(pick.player)}</span>`;
+          if (traded) inner += `<span class="pick-via">via ${this.esc(pick.originalOwner)}</span>`;
         } else {
           inner += `<span class="pick-empty-label">${pick.round}.${String(pick.pickInRound).padStart(2, "0")}</span>`;
         }
         inner += `<span class="pick-overall">${pick.overall}</span>`;
 
-        const onclick = (!filled && State.draftStarted) ? `onclick="Modals.openDraftAt(${pickIdx})"` : "";
+        let onclick = "";
+        if (!filled && State.draftStarted && Auth.canDraftPick(pickIdx)) {
+          onclick = `onclick="Modals.openDraftAt(${pickIdx})"`;
+        }
 
         bodyHTML += `<td class="pick-cell"><div class="${classes}" style="${style}" ${onclick}>${inner}</div></td>`;
-      });
-
+      }
       bodyHTML += `</tr>`;
-    }
+    });
 
     tbody.innerHTML = bodyHTML;
   },
@@ -171,9 +191,15 @@ const UI = {
     const teamEl = document.getElementById("otc-team");
     teamEl.textContent = p.currentOwner;
     teamEl.style.color = color;
+
+    const draftBtn = document.getElementById("otc-draft-btn");
+    if (Auth.canDraftCurrentPick()) {
+      draftBtn.classList.remove("hidden");
+    } else {
+      draftBtn.classList.add("hidden");
+    }
   },
 
-  // ─── Scroll to current pick ───
   scrollToCurrent() {
     const currentEl = document.querySelector(".pick.is-current");
     if (currentEl) {
@@ -181,7 +207,6 @@ const UI = {
     }
   },
 
-  // ─── HTML escape ───
   esc(str) {
     const div = document.createElement("div");
     div.textContent = str;

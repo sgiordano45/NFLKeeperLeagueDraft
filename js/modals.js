@@ -333,6 +333,83 @@ const Modals = {
       </table>
     `);
   },
+
+  // ─── CLAIM TEAM (for owners) ───
+  openClaimTeam() {
+    const claims = Auth._teamClaims || {};
+
+    let teamRows = State.teams.map((team, i) => {
+      const color = CONFIG.TEAM_COLORS[i % CONFIG.TEAM_COLORS.length];
+      const claim = claims[team];
+      const isMine = claim && Auth.user && claim.uid === Auth.user.uid;
+      const isTaken = claim && !isMine;
+
+      let status = "";
+      let action = "";
+
+      if (isMine) {
+        status = `<span class="claim-status claimed-mine">You</span>`;
+        action = `<button class="btn btn-sm btn-danger" onclick="Auth.unclaimTeam('${UI.esc(team)}');Modals.openClaimTeam()">Release</button>`;
+      } else if (isTaken) {
+        status = `<span class="claim-status claimed-other">${UI.esc(claim.displayName)}</span>`;
+        action = "";
+      } else {
+        status = `<span class="claim-status unclaimed">Available</span>`;
+        action = `<button class="btn btn-sm btn-success" onclick="Auth.claimTeam('${UI.esc(team)}');Modals.openClaimTeam()">Claim</button>`;
+      }
+
+      return `
+        <tr>
+          <td style="color:${color};font-weight:700;font-family:var(--font-display)">${UI.esc(team)}</td>
+          <td>${status}</td>
+          <td style="text-align:right">${action}</td>
+        </tr>`;
+    }).join("");
+
+    this.open("Claim Your Team", `
+      <p class="modal-hint">Select a team to control. You'll be able to draft when it's your team's turn.</p>
+      <table class="data-table">
+        <thead><tr><th>Team</th><th>Owner</th><th></th></tr></thead>
+        <tbody>${teamRows}</tbody>
+      </table>
+    `);
+  },
+
+  // ─── MANAGE CLAIMS (commissioner) ───
+  openManageClaims() {
+    const claims = Auth._teamClaims || {};
+
+    let teamRows = State.teams.map((team, i) => {
+      const color = CONFIG.TEAM_COLORS[i % CONFIG.TEAM_COLORS.length];
+      const claim = claims[team];
+
+      let ownerCol = "";
+      let actionCol = "";
+
+      if (claim) {
+        ownerCol = `<span>${UI.esc(claim.displayName)}<br><span style="font-size:11px;color:var(--text-muted)">${UI.esc(claim.email)}</span></span>`;
+        actionCol = `<button class="btn btn-sm btn-danger" onclick="Auth.unclaimTeam('${UI.esc(team)}');Modals.openManageClaims()">Remove</button>`;
+      } else {
+        ownerCol = `<span class="claim-status unclaimed">No owner</span>`;
+        actionCol = "";
+      }
+
+      return `
+        <tr>
+          <td style="color:${color};font-weight:700;font-family:var(--font-display)">${UI.esc(team)}</td>
+          <td>${ownerCol}</td>
+          <td style="text-align:right">${actionCol}</td>
+        </tr>`;
+    }).join("");
+
+    this.open("Manage Team Owners", `
+      <p class="modal-hint">View and manage which users have claimed each team. Owners sign in with Google and claim a team from the board.</p>
+      <table class="data-table">
+        <thead><tr><th>Team</th><th>Owner</th><th></th></tr></thead>
+        <tbody>${teamRows}</tbody>
+      </table>
+    `);
+  },
 };
 
 // ─── Modal event listeners ───
