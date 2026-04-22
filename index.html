@@ -41,6 +41,16 @@
     </div>
   </div>
 
+  <!-- ─── TEAM PANEL (slide-in sidebar) ─── -->
+  <div id="team-panel-overlay" class="team-panel-overlay hidden" onclick="TeamPanel.close()"></div>
+  <aside id="team-panel" class="team-panel">
+    <div class="tp-header">
+      <h2 class="tp-title">My Team</h2>
+      <button class="modal-close" onclick="TeamPanel.close()">&times;</button>
+    </div>
+    <div id="team-panel-body" class="tp-body"></div>
+  </aside>
+
   <!-- ─── MODAL BACKDROP ─── -->
   <div id="modal-backdrop" class="modal-backdrop hidden">
     <div id="modal" class="modal" role="dialog">
@@ -94,14 +104,18 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script>
-      const firebaseConfig = {
-        apiKey: "AIzaSyBF6WYqL4n2yiuVSDthb-Yt9E8VEyrHl3U",
-        authDomain: "stamperleaguedraftboard.firebaseapp.com",
-        projectId: "stamperleaguedraftboard",
-        storageBucket: "stamperleaguedraftboard.firebasestorage.app",
-        messagingSenderId: "11449370579",
-        appId: "1:11449370579:web:62b713a0d4b3a1ddd55126"
-      };
+    // ──────────────────────────────────────────────────
+    // REPLACE THIS with your Firebase project config
+    // ──────────────────────────────────────────────────
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "000000000000",
+      appId: "YOUR_APP_ID"
+    };
 
     firebase.initializeApp(firebaseConfig);
     window.db = firebase.database();
@@ -115,6 +129,7 @@
   <script src="js/ui.js"></script>
   <script src="js/modals.js"></script>
   <script src="js/timer.js"></script>
+  <script src="js/team-panel.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

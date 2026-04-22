@@ -61,34 +61,36 @@ const Auth = {
   // ─── Role resolution ───
   async _resolveRole(user) {
     // Check if user is commissioner
+    let isComm = false;
     try {
       const commSnap = await window.db.ref("commissioner").once("value");
       const commEmail = commSnap.val();
       if (commEmail && user.email.toLowerCase() === commEmail.toLowerCase()) {
+        isComm = true;
         this.role = "commissioner";
-        this.claimedTeam = null;
-        return;
       }
     } catch (err) {
       console.error("Error checking commissioner:", err);
     }
 
-    // Check if user has claimed a team
+    // Check if user has claimed a team (commissioner can also have one)
     const claimSnap = await window.db.ref(`${CONFIG.FB_PATH}/teamClaims`).once("value");
     const claims = claimSnap.val() || {};
     this._teamClaims = claims;
 
     for (const [teamName, claim] of Object.entries(claims)) {
       if (claim.uid === user.uid) {
-        this.role = "owner";
         this.claimedTeam = teamName;
+        if (!isComm) this.role = "owner";
         return;
       }
     }
 
-    // Signed in but no team claimed yet — still spectator until they claim
-    this.role = "spectator";
+    // No team claimed
     this.claimedTeam = null;
+    if (!isComm) {
+      this.role = "spectator";
+    }
   },
 
   // ─── Team claiming ───
@@ -125,7 +127,10 @@ const Auth = {
       email: this.user.email,
     });
 
-    this.role = "owner";
+    // Commissioner keeps commissioner role, others become owner
+    if (!this.isCommissioner()) {
+      this.role = "owner";
+    }
     this.claimedTeam = teamName;
     this._updateUserBar();
     UI.render();
@@ -134,7 +139,9 @@ const Auth = {
   async unclaimTeam(teamName) {
     await window.db.ref(`${CONFIG.FB_PATH}/teamClaims/${teamName}`).remove();
     if (this.claimedTeam === teamName) {
-      this.role = "spectator";
+      if (!this.isCommissioner()) {
+        this.role = "spectator";
+      }
       this.claimedTeam = null;
     }
     this._updateUserBar();
@@ -222,6 +229,10 @@ const Auth = {
     if (this.isCommissioner()) {
       role.textContent = "COMMISSIONER";
       role.className = "user-role-badge role-commissioner";
+      // Also show team if commissioner has claimed one
+      if (this.claimedTeam) {
+        role.textContent = `COMMISH · ${this.claimedTeam}`;
+      }
     } else if (this.isOwner()) {
       role.textContent = this.claimedTeam;
       role.className = "user-role-badge role-owner";
@@ -229,6 +240,11 @@ const Auth = {
       role.textContent = "NO TEAM";
       role.className = "user-role-badge role-spectator";
     }
+  },
+
+  // Does this user have a team (commissioner or owner)?
+  hasTeam() {
+    return !!this.claimedTeam;
   },
 
   // Get the owner name for a team (for display)

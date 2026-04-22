@@ -388,10 +388,10 @@ const Modals = {
 
       if (claim) {
         ownerCol = `<span>${UI.esc(claim.displayName)}<br><span style="font-size:11px;color:var(--text-muted)">${UI.esc(claim.email)}</span></span>`;
-        actionCol = `<button class="btn btn-sm btn-danger" onclick="Auth.unclaimTeam('${UI.esc(team)}');Modals.openManageClaims()">Remove</button>`;
+        actionCol = `<button class="btn btn-sm btn-danger" onclick="Auth.unclaimTeam('${team.replace(/'/g, "\\'")}');Modals.openManageClaims()">Remove</button>`;
       } else {
         ownerCol = `<span class="claim-status unclaimed">No owner</span>`;
-        actionCol = "";
+        actionCol = `<button class="btn btn-sm btn-success" onclick="Auth.claimTeam('${team.replace(/'/g, "\\'")}');Modals.openManageClaims()">Claim</button>`;
       }
 
       return `

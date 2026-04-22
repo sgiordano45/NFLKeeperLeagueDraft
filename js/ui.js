@@ -17,6 +17,7 @@ const UI = {
     nav.innerHTML = "";
 
     const isAdmin = Auth.canAdmin();
+    const myTeamBtn = Auth.hasTeam() ? `<button class="btn" onclick="TeamPanel.toggle()">My Team</button>` : "";
 
     if (!State.draftStarted) {
       let buttons = "";
@@ -38,6 +39,8 @@ const UI = {
       if (isAdmin) {
         buttons += `<button class="btn" onclick="Modals.openManageClaims()">Manage Owners</button>`;
       }
+
+      buttons += myTeamBtn;
 
       nav.innerHTML = buttons;
       status.innerHTML = "";
@@ -65,6 +68,7 @@ const UI = {
 
       buttons += `<button class="btn" onclick="Modals.openHistory()">History</button>`;
       buttons += `<button class="btn" onclick="Modals.openTimerSummary()">Timer</button>`;
+      buttons += myTeamBtn;
 
       if (isAdmin) {
         buttons += `<button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>`;
@@ -79,6 +83,7 @@ const UI = {
         <button class="btn" onclick="Modals.openHistory()">History</button>
         <button class="btn" onclick="Modals.openTimerSummary()">Timer</button>
       `;
+      buttons += myTeamBtn;
 
       if (isAdmin) {
         buttons += `
