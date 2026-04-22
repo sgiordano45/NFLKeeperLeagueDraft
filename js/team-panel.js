@@ -67,9 +67,14 @@ const TeamPanel = {
       } else {
         players.forEach(p => {
           const name = this._cleanName(p.player);
+          const info = this._getPlayerInfo(p.player);
+          let metaParts = [`Rd ${p.round}`];
+          if (p.isKeeper) metaParts.push('K');
+          if (info && info.team) metaParts.push(info.team);
+          if (info && info.bye) metaParts.push(`Bye ${info.bye}`);
           rosterHTML += `<div class="tp-player">
             <span class="tp-player-name">${UI.esc(name)}</span>
-            <span class="tp-player-meta">Rd ${p.round}${p.isKeeper ? ' · K' : ''}</span>
+            <span class="tp-player-meta">${metaParts.join(' · ')}${info && info.projPts ? ` · <strong>${info.projPts.toFixed(1)}pts</strong>` : ''}</span>
           </div>`;
         });
       }
@@ -80,9 +85,10 @@ const TeamPanel = {
       rosterHTML += `<div class="tp-pos-group">
         <div class="tp-pos-header">Other <span class="tp-pos-count">${uncategorized.length}</span></div>`;
       uncategorized.forEach(p => {
+        const info = this._getPlayerInfo(p.player);
         rosterHTML += `<div class="tp-player">
           <span class="tp-player-name">${UI.esc(p.player)}</span>
-          <span class="tp-player-meta">Rd ${p.round}</span>
+          <span class="tp-player-meta">Rd ${p.round}${info && info.team ? ' · ' + info.team : ''}${info && info.bye ? ' · Bye ' + info.bye : ''}</span>
         </div>`;
       });
       rosterHTML += `</div>`;
@@ -202,17 +208,29 @@ const TeamPanel = {
   },
 
   // ─── Position detection from player name ───
-  // Supports formats like "Player Name, QB" or just "Player Name"
+  // First checks "Name, POS" format, then looks up in Players database
   _detectPosition(playerStr) {
     if (!playerStr) return null;
+    // Check comma format first
     const match = playerStr.match(/,\s*(QB|RB|WR|TE|K|DEF|DST)\s*$/i);
     if (match) return match[1].toUpperCase() === "DST" ? "DEF" : match[1].toUpperCase();
+    // Fall back to Players database
+    const dbPlayer = Players.get(playerStr);
+    if (dbPlayer) return dbPlayer.pos;
     return null;
   },
 
   _cleanName(playerStr) {
     if (!playerStr) return "";
-    return playerStr.replace(/,\s*(QB|RB|WR|TE|K|DEF|DST)\s*$/i, "").trim();
+    // Strip comma+position suffix
+    const cleaned = playerStr.replace(/,\s*(QB|RB|WR|TE|K|DEF|DST)\s*$/i, "").trim();
+    return cleaned;
+  },
+
+  // Get full player info for display
+  _getPlayerInfo(playerStr) {
+    const cleanName = this._cleanName(playerStr);
+    return Players.get(cleanName) || Players.get(playerStr) || null;
   },
 
   // ─── Draft needs calculator ───

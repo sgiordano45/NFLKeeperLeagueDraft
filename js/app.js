@@ -32,6 +32,9 @@ const App = {
       State.deserialize(saved);
     }
 
+    // Load player database
+    await Players.init();
+
     // Initial render
     UI.render();
 

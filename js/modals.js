@@ -202,6 +202,7 @@ const Modals = {
 
     const color = State.teamColor(pick.currentOwner);
     const traded = pick.originalOwner !== pick.currentOwner;
+    const hasPlayers = Players.count() > 0;
 
     this.open("Draft Player", `
       <div class="pick-info-box">
@@ -209,17 +210,132 @@ const Modals = {
         <div class="pick-info-team" style="color:${color}">${UI.esc(pick.currentOwner)}</div>
         ${traded ? `<span class="pick-info-via">(via ${UI.esc(pick.originalOwner)})</span>` : ""}
       </div>
-      <input class="form-input form-input-lg" id="draft-player-input" placeholder="Player name…" autofocus
-        onkeydown="if(event.key==='Enter')Modals.confirmDraft()" />
+      <div style="position:relative">
+        <input class="form-input form-input-lg" id="draft-player-input"
+          placeholder="${hasPlayers ? 'Search player…' : 'Player name…'}" autofocus
+          oninput="Modals.onDraftSearch(this.value)"
+          onkeydown="Modals.onDraftKeydown(event)" />
+        <div id="draft-autocomplete" class="draft-autocomplete hidden"></div>
+      </div>
+      <div id="draft-selected-info" class="draft-selected-info hidden"></div>
       <button class="btn btn-gold btn-full mt-12" style="padding:12px 0;font-size:16px"
         onclick="Modals.confirmDraft()">Confirm Pick</button>
     `);
 
-    // Focus the input after modal renders
+    this._draftAutoIdx = -1;
+    this._draftResults = [];
+
     setTimeout(() => {
       const input = document.getElementById("draft-player-input");
       if (input) input.focus();
     }, 50);
+  },
+
+  _draftAutoIdx: -1,
+  _draftResults: [],
+
+  onDraftSearch(query) {
+    const ac = document.getElementById("draft-autocomplete");
+    const info = document.getElementById("draft-selected-info");
+    if (!ac) return;
+
+    if (!query || query.length < 2 || Players.count() === 0) {
+      ac.classList.add("hidden");
+      ac.innerHTML = "";
+      info.classList.add("hidden");
+      this._draftResults = [];
+      this._draftAutoIdx = -1;
+      return;
+    }
+
+    this._draftResults = Players.search(query, 10);
+    this._draftAutoIdx = -1;
+
+    if (this._draftResults.length === 0) {
+      ac.innerHTML = `<div class="ac-empty">No available players found</div>`;
+      ac.classList.remove("hidden");
+      return;
+    }
+
+    ac.innerHTML = this._draftResults.map((p, i) => `
+      <div class="ac-item ${i === this._draftAutoIdx ? 'ac-active' : ''}"
+        onmousedown="Modals.selectDraftPlayer(${i})"
+        onmouseenter="Modals._draftAutoIdx=${i};Modals._highlightAC()">
+        <span class="ac-name">${UI.esc(p.name)}</span>
+        <span class="ac-meta">
+          <span class="player-pos-badge pos-${p.pos.toLowerCase()}">${p.pos === 'DEF' ? 'D/ST' : p.pos}</span>
+          ${p.team ? `<span class="ac-team">${UI.esc(p.team)}</span>` : ''}
+          ${p.bye ? `<span class="ac-bye">Bye ${p.bye}</span>` : ''}
+          ${p.adp < 999 ? `<span class="ac-adp">ADP ${Math.round(p.adp)}</span>` : ''}
+        </span>
+      </div>
+    `).join('');
+    ac.classList.remove("hidden");
+  },
+
+  onDraftKeydown(e) {
+    const ac = document.getElementById("draft-autocomplete");
+    if (!ac || ac.classList.contains("hidden") || this._draftResults.length === 0) {
+      if (e.key === "Enter") this.confirmDraft();
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this._draftAutoIdx = Math.min(this._draftAutoIdx + 1, this._draftResults.length - 1);
+      this._highlightAC();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this._draftAutoIdx = Math.max(this._draftAutoIdx - 1, -1);
+      this._highlightAC();
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (this._draftAutoIdx >= 0) {
+        this.selectDraftPlayer(this._draftAutoIdx);
+      } else {
+        this.confirmDraft();
+      }
+    } else if (e.key === "Escape") {
+      ac.classList.add("hidden");
+    }
+  },
+
+  _highlightAC() {
+    const items = document.querySelectorAll("#draft-autocomplete .ac-item");
+    items.forEach((el, i) => {
+      el.classList.toggle("ac-active", i === this._draftAutoIdx);
+    });
+  },
+
+  selectDraftPlayer(idx) {
+    const p = this._draftResults[idx];
+    if (!p) return;
+
+    const input = document.getElementById("draft-player-input");
+    // Store as "Name, POS" for roster categorization
+    input.value = `${p.name}, ${p.pos}`;
+
+    const ac = document.getElementById("draft-autocomplete");
+    ac.classList.add("hidden");
+
+    // Show selected player info
+    const info = document.getElementById("draft-selected-info");
+    info.classList.remove("hidden");
+    info.innerHTML = `
+      <div class="selected-player-card">
+        <span class="player-pos-badge pos-${p.pos.toLowerCase()}" style="font-size:12px;padding:2px 8px">${p.pos === 'DEF' ? 'D/ST' : p.pos}</span>
+        <span class="selected-player-name">${UI.esc(p.name)}</span>
+        <div class="selected-player-meta">
+          ${p.team ? `<span>${p.team}</span>` : ''}
+          ${p.bye ? `<span>Bye ${p.bye}</span>` : ''}
+          ${p.adp < 999 ? `<span>ADP ${Math.round(p.adp)}</span>` : ''}
+          ${p.projPts ? `<span>${p.projPts.toFixed(1)} pts</span>` : ''}
+        </div>
+      </div>
+    `;
+
+    this._draftResults = [];
+    this._draftAutoIdx = -1;
   },
 
   confirmDraft() {
@@ -409,6 +525,166 @@ const Modals = {
         <tbody>${teamRows}</tbody>
       </table>
     `);
+  },
+
+  // ─── MANAGE PLAYERS (commissioner) ───
+  openPlayers() {
+    const count = Players.count();
+    const posBreakdown = this._getPositionBreakdown();
+
+    this.open("Manage Players", `
+      <p class="modal-hint">Upload a CSV with player data. Required columns: Name, Position. Optional: Team, Bye, ADP/Rank, Projected Points.</p>
+
+      <div class="tp-section" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <label class="btn btn-success" style="cursor:pointer;margin:0">
+            Upload CSV
+            <input type="file" accept=".csv,.txt" id="csv-upload" style="display:none"
+              onchange="Modals.handleCSVUpload(this)" />
+          </label>
+          <span style="font-size:13px;color:var(--text-secondary)">
+            ${count > 0 ? `${count} players loaded` : 'No players loaded'}
+          </span>
+          ${count > 0 ? `<button class="btn btn-danger btn-sm" onclick="Modals.clearPlayers()">Clear All</button>` : ''}
+        </div>
+
+        ${count > 0 ? `
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+            ${posBreakdown.map(p => `
+              <span class="tp-need" style="padding:4px 10px;flex-direction:row;gap:6px;display:inline-flex">
+                <span class="tp-need-pos" style="font-size:11px">${p.pos}</span>
+                <span style="font-size:11px;color:var(--text-secondary)">${p.count}</span>
+              </span>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+
+      <div id="csv-upload-status"></div>
+
+      ${count > 0 ? `
+        <div style="margin-bottom:8px">
+          <input class="form-input" id="player-search-manage" placeholder="Search players…"
+            oninput="Modals.filterPlayerList(this.value)" />
+        </div>
+        <div id="player-list-container" style="max-height:350px;overflow-y:auto">
+          ${this._renderPlayerTable(Players.getAll().slice(0, 50))}
+        </div>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px">Showing top 50 by ADP. Use search to find specific players.</p>
+      ` : `
+        <div style="padding:24px;text-align:center;color:var(--text-muted)">
+          <p style="font-size:14px;margin-bottom:8px">No players loaded yet</p>
+          <p style="font-size:12px">Upload a CSV file with columns like:<br>
+          <code style="color:var(--text-secondary)">Name, Pos, Team, Bye, ADP, Points</code></p>
+        </div>
+      `}
+    `);
+  },
+
+  _getPositionBreakdown() {
+    const counts = {};
+    Players.getAll().forEach(p => {
+      const pos = p.pos === "DEF" ? "D/ST" : p.pos;
+      counts[pos] = (counts[pos] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([pos, count]) => ({ pos, count }))
+      .sort((a, b) => b.count - a.count);
+  },
+
+  _renderPlayerTable(players) {
+    if (players.length === 0) {
+      return `<p style="text-align:center;color:var(--text-muted);padding:12px">No results</p>`;
+    }
+
+    let rows = players.map((p, i) => {
+      const globalIdx = Players.getAll().indexOf(p);
+      return `
+        <tr>
+          <td style="font-size:12px;color:var(--text-muted)">${p.adp < 999 ? Math.round(p.adp) : '—'}</td>
+          <td style="font-weight:600">${UI.esc(p.name)}</td>
+          <td><span class="player-pos-badge pos-${p.pos.toLowerCase()}">${p.pos === 'DEF' ? 'D/ST' : p.pos}</span></td>
+          <td>${UI.esc(p.team || '—')}</td>
+          <td>${p.bye || '—'}</td>
+          <td>${p.projPts ? p.projPts.toFixed(1) : '—'}</td>
+          <td><button class="keeper-remove" onclick="Modals.deletePlayer(${globalIdx})">&times;</button></td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <table class="data-table">
+        <thead><tr><th>ADP</th><th>Name</th><th>Pos</th><th>Team</th><th>Bye</th><th>Pts</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  },
+
+  filterPlayerList(query) {
+    const container = document.getElementById("player-list-container");
+    if (!container) return;
+
+    let players;
+    if (!query || query.length < 2) {
+      players = Players.getAll().slice(0, 50);
+    } else {
+      const q = query.toUpperCase();
+      players = Players.getAll().filter(p =>
+        p.name.toUpperCase().includes(q) ||
+        p.pos.toUpperCase().includes(q) ||
+        (p.team && p.team.toUpperCase().includes(q))
+      ).slice(0, 50);
+    }
+    container.innerHTML = this._renderPlayerTable(players);
+  },
+
+  async handleCSVUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const statusEl = document.getElementById("csv-upload-status");
+    statusEl.innerHTML = `<p style="color:var(--text-secondary);font-size:13px">Parsing ${UI.esc(file.name)}…</p>`;
+
+    try {
+      const text = await file.text();
+      const { players, errors } = Players.parseCSV(text);
+
+      if (players.length === 0) {
+        statusEl.innerHTML = `<p style="color:var(--danger);font-size:13px">${errors[0] || 'No valid players found in CSV.'}</p>`;
+        return;
+      }
+
+      const ok = await Players.saveToDB(players);
+      if (!ok) {
+        statusEl.innerHTML = `<p style="color:var(--danger);font-size:13px">Failed to save to Firebase.</p>`;
+        return;
+      }
+
+      let msg = `<p style="color:var(--success);font-size:13px">Loaded ${players.length} players.</p>`;
+      if (errors.length > 0) {
+        msg += `<p style="color:var(--gold);font-size:12px">${errors.length} row(s) skipped:</p>`;
+        msg += `<ul style="font-size:11px;color:var(--text-muted);padding-left:16px;max-height:80px;overflow-y:auto">`;
+        errors.slice(0, 10).forEach(e => msg += `<li>${UI.esc(e)}</li>`);
+        if (errors.length > 10) msg += `<li>…and ${errors.length - 10} more</li>`;
+        msg += `</ul>`;
+      }
+      statusEl.innerHTML = msg;
+
+      // Refresh modal after a moment
+      setTimeout(() => this.openPlayers(), 1000);
+
+    } catch (e) {
+      statusEl.innerHTML = `<p style="color:var(--danger);font-size:13px">Error reading file: ${UI.esc(e.message)}</p>`;
+    }
+  },
+
+  async deletePlayer(index) {
+    await Players.deletePlayer(index);
+    this.openPlayers();
+  },
+
+  async clearPlayers() {
+    if (!confirm("Remove all players from the database?")) return;
+    await Players.clearAll();
+    this.openPlayers();
   },
 };
 

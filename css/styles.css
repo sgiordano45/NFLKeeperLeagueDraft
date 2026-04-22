@@ -775,6 +775,109 @@ header {
   color: var(--text-muted);
 }
 
+/* ─── DRAFT AUTOCOMPLETE ─── */
+.draft-autocomplete {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.draft-autocomplete.hidden { display: none; }
+
+.ac-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background .1s;
+}
+
+.ac-item:hover, .ac-item.ac-active {
+  background: var(--bg-elevated);
+}
+
+.ac-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.ac-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.ac-team { color: var(--text-muted); }
+.ac-bye { color: var(--text-muted); }
+.ac-adp { color: var(--text-muted); }
+.ac-empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ─── PLAYER POSITION BADGES ─── */
+.player-pos-badge {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.pos-qb  { background: #5C1D91; color: #E8D0FF; }
+.pos-rb  { background: #1A6B3C; color: #C8F7D8; }
+.pos-wr  { background: #1565C0; color: #BBDEFB; }
+.pos-te  { background: #BF360C; color: #FFCCBC; }
+.pos-k   { background: #4E342E; color: #D7CCC8; }
+.pos-def { background: #37474F; color: #CFD8DC; }
+
+/* ─── SELECTED PLAYER CARD (in draft modal) ─── */
+.draft-selected-info {
+  margin-top: 12px;
+}
+.draft-selected-info.hidden { display: none; }
+
+.selected-player-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.selected-player-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.selected-player-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
 /* ─── TEAM PANEL (slide-in sidebar) ─── */
 .team-panel-overlay {
   position: fixed;
