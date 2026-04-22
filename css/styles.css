@@ -777,17 +777,13 @@ header {
 
 /* ─── DRAFT AUTOCOMPLETE ─── */
 .draft-autocomplete {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
   background: var(--bg-deep);
   border: 1px solid var(--border);
   border-top: none;
   border-radius: 0 0 6px 6px;
   max-height: 280px;
   overflow-y: auto;
-  z-index: 10;
+  margin-top: -1px;
 }
 
 .draft-autocomplete.hidden { display: none; }

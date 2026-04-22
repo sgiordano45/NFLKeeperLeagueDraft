@@ -215,13 +215,11 @@ const Modals = {
         <div class="pick-info-team" style="color:${color}">${UI.esc(pick.currentOwner)}</div>
         ${traded ? `<span class="pick-info-via">(via ${UI.esc(pick.originalOwner)})</span>` : ""}
       </div>
-      <div style="position:relative">
-        <input class="form-input form-input-lg" id="draft-player-input"
-          placeholder="${hasPlayers ? 'Search player…' : 'Player name…'}" autofocus
-          oninput="Modals.onDraftSearch(this.value)"
-          onkeydown="Modals.onDraftKeydown(event)" />
-        <div id="draft-autocomplete" class="draft-autocomplete hidden"></div>
-      </div>
+      <input class="form-input form-input-lg" id="draft-player-input"
+        placeholder="${hasPlayers ? 'Search player…' : 'Player name…'}" autofocus
+        oninput="Modals.onDraftSearch(this.value)"
+        onkeydown="Modals.onDraftKeydown(event)" />
+      <div id="draft-autocomplete" class="draft-autocomplete hidden"></div>
       <div id="draft-selected-info" class="draft-selected-info hidden"></div>
       <button class="btn btn-gold btn-full mt-12" style="padding:12px 0;font-size:16px"
         onclick="Modals.confirmDraft()">Confirm Pick</button>

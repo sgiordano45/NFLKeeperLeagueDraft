@@ -44,13 +44,13 @@ const FirebaseSync = {
   },
 
   // Push local state to Firebase
+  // Uses update() instead of set() to preserve sibling data (players, watchlists, teamClaims)
   push(data) {
     if (this._offlineMode || !this._ref) return;
 
     this._pushing = true;
-    this._ref.set(data)
+    this._ref.update(data)
       .then(() => {
-        // Short delay before re-enabling listener to avoid echo
         setTimeout(() => { this._pushing = false; }, 100);
       })
       .catch(err => {
