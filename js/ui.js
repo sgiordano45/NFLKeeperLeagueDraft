@@ -69,6 +69,7 @@ const UI = {
 
       buttons += `<button class="btn" onclick="Modals.openHistory()">History</button>`;
       buttons += `<button class="btn" onclick="Modals.openTimerSummary()">Timer</button>`;
+      buttons += `<button class="btn" onclick="Modals.openTeamSummary()">Teams</button>`;
       buttons += myTeamBtn;
 
       if (isAdmin) {
@@ -83,6 +84,7 @@ const UI = {
       let buttons = `
         <button class="btn" onclick="Modals.openHistory()">History</button>
         <button class="btn" onclick="Modals.openTimerSummary()">Timer</button>
+        <button class="btn" onclick="Modals.openTeamSummary()">Teams</button>
       `;
       buttons += myTeamBtn;
 

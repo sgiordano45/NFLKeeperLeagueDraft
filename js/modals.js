@@ -2,14 +2,19 @@
 const Modals = {
   _selectedPickIndex: null,
 
-  open(title, bodyHTML) {
+  open(title, bodyHTML, opts = {}) {
     document.getElementById("modal-title").textContent = title;
     document.getElementById("modal-body").innerHTML = bodyHTML;
+    const modal = document.getElementById("modal");
+    modal.style.width = opts.wide ? "95vw" : "";
+    modal.style.maxWidth = opts.wide ? "1200px" : "";
     document.getElementById("modal-backdrop").classList.remove("hidden");
   },
 
   close() {
     document.getElementById("modal-backdrop").classList.add("hidden");
+    document.getElementById("modal").style.width = "";
+    document.getElementById("modal").style.maxWidth = "";
     this._selectedPickIndex = null;
   },
 
@@ -685,6 +690,237 @@ const Modals = {
     if (!confirm("Remove all players from the database?")) return;
     await Players.clearAll();
     this.openPlayers();
+  },
+
+  // ─── TEAM SUMMARY ───
+  _summaryDetailTeam: null,
+
+  openTeamSummary() {
+    this._summaryDetailTeam = null;
+    this._renderTeamSummary();
+  },
+
+  _renderTeamSummary() {
+    if (this._summaryDetailTeam) {
+      this._renderTeamDetail(this._summaryDetailTeam);
+      return;
+    }
+
+    const positions = ["QB", "RB", "WR", "TE", "K", "DEF"];
+
+    // Build roster data for each team
+    const teamData = State.teams.map((team, tIdx) => {
+      const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
+      const picks = State.picks.filter(p => p.currentOwner === team && p.player);
+      const roster = {};
+      const uncategorized = [];
+      positions.forEach(pos => roster[pos] = []);
+
+      picks.forEach(p => {
+        const pos = this._detectPos(p.player);
+        if (pos && roster[pos]) {
+          roster[pos].push(p);
+        } else {
+          uncategorized.push(p);
+        }
+      });
+
+      // Total projected points
+      let totalPts = 0;
+      picks.forEach(p => {
+        const info = this._getPlayerDB(p.player);
+        if (info && info.projPts) totalPts += info.projPts;
+      });
+
+      return { team, color, picks, roster, uncategorized, totalPts };
+    });
+
+    // Sort by total projected points (highest first) if players loaded
+    const sorted = Players.count() > 0
+      ? [...teamData].sort((a, b) => b.totalPts - a.totalPts)
+      : teamData;
+
+    let cardsHTML = sorted.map((td, rank) => {
+      const pickCount = td.picks.length;
+      const remaining = State.picks.filter(p => p.currentOwner === td.team && !p.player).length;
+
+      let posRow = positions.map(pos => {
+        const players = td.roster[pos];
+        const posLabel = pos === "DEF" ? "D/ST" : pos;
+        if (players.length === 0) {
+          return `<div class="ts-pos-cell ts-pos-empty"><span class="ts-pos-label">${posLabel}</span><span class="ts-pos-dash">—</span></div>`;
+        }
+        return `<div class="ts-pos-cell">
+          <span class="ts-pos-label">${posLabel}</span>
+          ${players.map(p => {
+            const name = this._cleanPlayerName(p.player);
+            const info = this._getPlayerDB(p.player);
+            const bye = info && info.bye ? info.bye : null;
+            return `<span class="ts-player-name">${UI.esc(name)}${bye ? `<span class="ts-bye">B${bye}</span>` : ''}</span>`;
+          }).join('')}
+        </div>`;
+      }).join('');
+
+      return `
+        <div class="ts-card" onclick="Modals._summaryDetailTeam='${td.team.replace(/'/g, "\\'")}';Modals._renderTeamSummary()" style="border-top:3px solid ${td.color}">
+          <div class="ts-card-header">
+            <span class="ts-team-name" style="color:${td.color}">${UI.esc(td.team)}</span>
+            <div class="ts-card-stats">
+              <span>${pickCount} player${pickCount !== 1 ? 's' : ''}</span>
+              ${remaining > 0 ? `<span>${remaining} left</span>` : ''}
+              ${td.totalPts > 0 ? `<span class="ts-total-pts">${td.totalPts.toFixed(1)} pts</span>` : ''}
+            </div>
+          </div>
+          <div class="ts-pos-row">${posRow}</div>
+        </div>`;
+    }).join('');
+
+    this.open("Team Summary", `
+      <p class="modal-hint">All teams by position. Click a team for full detail.${Players.count() > 0 ? ' Sorted by projected points.' : ''}</p>
+      <div class="ts-grid">${cardsHTML}</div>
+    `, { wide: true });
+  },
+
+  _renderTeamDetail(teamName) {
+    const tIdx = State.teams.indexOf(teamName);
+    const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
+    const positions = ["QB", "RB", "WR", "TE", "K", "DEF"];
+    const picks = State.picks.filter(p => p.currentOwner === teamName && p.player);
+    const remaining = State.picks.filter(p => p.currentOwner === teamName && !p.player);
+
+    const roster = {};
+    positions.forEach(pos => roster[pos] = []);
+    const uncategorized = [];
+
+    picks.forEach(p => {
+      const pos = this._detectPos(p.player);
+      if (pos && roster[pos]) {
+        roster[pos].push(p);
+      } else {
+        uncategorized.push(p);
+      }
+    });
+
+    // Total projected
+    let totalPts = 0;
+
+    // Build position sections
+    let rosterHTML = positions.map(pos => {
+      const players = roster[pos];
+      const posLabel = pos === "DEF" ? "D/ST" : pos;
+
+      let rows = '';
+      if (players.length === 0) {
+        rows = `<tr><td colspan="6" style="color:var(--text-muted);font-style:italic;padding:6px 8px">—</td></tr>`;
+      } else {
+        rows = players.map(p => {
+          const name = this._cleanPlayerName(p.player);
+          const info = this._getPlayerDB(p.player);
+          const pts = info && info.projPts ? info.projPts : 0;
+          totalPts += pts;
+          return `<tr>
+            <td style="font-weight:600">${UI.esc(name)}</td>
+            <td>${info && info.team ? info.team : '—'}</td>
+            <td>${info && info.bye ? info.bye : '—'}</td>
+            <td>Rd ${p.round}${p.isKeeper ? ' <span style="color:var(--gold);font-size:10px;font-family:var(--font-display)">K</span>' : ''}</td>
+            <td>${info && info.adp < 999 ? Math.round(info.adp) : '—'}</td>
+            <td style="font-weight:700">${pts > 0 ? pts.toFixed(1) : '—'}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      return `
+        <div class="ts-detail-section">
+          <h4 class="ts-detail-pos-header">
+            <span class="player-pos-badge pos-${pos.toLowerCase()}" style="font-size:11px;padding:2px 8px">${posLabel}</span>
+            <span class="ts-detail-pos-count">${players.length}</span>
+          </h4>
+          <table class="data-table">
+            <thead><tr><th>Player</th><th>Team</th><th>Bye</th><th>Pick</th><th>ADP</th><th>Proj</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }).join('');
+
+    // Uncategorized
+    if (uncategorized.length > 0) {
+      rosterHTML += `<div class="ts-detail-section">
+        <h4 class="ts-detail-pos-header"><span style="font-size:11px">Other</span><span class="ts-detail-pos-count">${uncategorized.length}</span></h4>
+        <table class="data-table"><tbody>
+          ${uncategorized.map(p => `<tr><td style="font-weight:600">${UI.esc(p.player)}</td><td colspan="5">Rd ${p.round}</td></tr>`).join('')}
+        </tbody></table>
+      </div>`;
+    }
+
+    // Remaining picks
+    let remainHTML = '';
+    if (remaining.length > 0) {
+      remainHTML = `<div class="ts-detail-section">
+        <h4 class="ts-detail-pos-header"><span style="font-size:11px">Remaining Picks</span><span class="ts-detail-pos-count">${remaining.length}</span></h4>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${remaining.map(p => {
+            const traded = p.originalOwner !== p.currentOwner;
+            return `<span class="ts-remaining-pick">Rd ${p.round} #${p.overall}${traded ? ` <span style="font-size:9px;color:var(--text-muted)">via ${UI.esc(p.originalOwner)}</span>` : ''}</span>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }
+
+    // Bye week summary
+    const byeCounts = {};
+    picks.forEach(p => {
+      const info = this._getPlayerDB(p.player);
+      if (info && info.bye) {
+        byeCounts[info.bye] = (byeCounts[info.bye] || 0) + 1;
+      }
+    });
+    const byeEntries = Object.entries(byeCounts).sort((a, b) => b[1] - a[1]);
+    let byeHTML = '';
+    if (byeEntries.length > 0) {
+      byeHTML = `<div class="ts-detail-section">
+        <h4 class="ts-detail-pos-header"><span style="font-size:11px">Bye Week Conflicts</span></h4>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${byeEntries.map(([bye, count]) => {
+            const isConflict = count >= 3;
+            return `<span class="ts-bye-chip ${isConflict ? 'ts-bye-conflict' : ''}">Week ${bye}: ${count} player${count > 1 ? 's' : ''}</span>`;
+          }).join('')}
+        </div>
+      </div>`;
+    }
+
+    this.open("Team Summary", `
+      <button class="btn btn-sm" onclick="Modals._summaryDetailTeam=null;Modals._renderTeamSummary()" style="margin-bottom:16px">← All Teams</button>
+      <div class="ts-detail-header" style="border-color:${color}">
+        <span class="ts-detail-team" style="color:${color}">${UI.esc(teamName)}</span>
+        <div class="ts-detail-totals">
+          <span>${picks.length} players</span>
+          ${totalPts > 0 ? `<span class="ts-total-pts" style="font-size:16px">${totalPts.toFixed(1)} projected pts</span>` : ''}
+        </div>
+      </div>
+      ${rosterHTML}
+      ${byeHTML}
+      ${remainHTML}
+    `, { wide: true });
+  },
+
+  // Helpers for team summary (avoid dependency on TeamPanel)
+  _detectPos(playerStr) {
+    if (!playerStr) return null;
+    const match = playerStr.match(/,\s*(QB|RB|WR|TE|K|DEF|DST)\s*$/i);
+    if (match) return match[1].toUpperCase() === "DST" ? "DEF" : match[1].toUpperCase();
+    const dbPlayer = Players.get(playerStr);
+    if (dbPlayer) return dbPlayer.pos;
+    return null;
+  },
+
+  _cleanPlayerName(playerStr) {
+    if (!playerStr) return "";
+    return playerStr.replace(/,\s*(QB|RB|WR|TE|K|DEF|DST)\s*$/i, "").trim();
+  },
+
+  _getPlayerDB(playerStr) {
+    const clean = this._cleanPlayerName(playerStr);
+    return Players.get(clean) || Players.get(playerStr) || null;
   },
 };
 

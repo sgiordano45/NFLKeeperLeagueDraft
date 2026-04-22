@@ -878,6 +878,165 @@ header {
   margin-left: auto;
 }
 
+/* ─── TEAM SUMMARY ─── */
+.ts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.ts-card {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.ts-card:hover {
+  border-color: rgba(255,255,255,.15);
+  background: var(--bg-elevated);
+}
+
+.ts-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+}
+
+.ts-team-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.ts-card-stats {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.ts-total-pts {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.ts-pos-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.ts-pos-cell {
+  flex: 1;
+  min-width: 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.ts-pos-label {
+  font-family: var(--font-display);
+  font-size: 9px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.ts-player-name {
+  font-size: 9px;
+  text-align: center;
+  line-height: 1.2;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.ts-pos-empty .ts-pos-dash {
+  font-size: 10px;
+  color: rgba(255,255,255,.15);
+}
+
+.ts-bye {
+  font-size: 7px;
+  color: var(--text-muted);
+  margin-left: 2px;
+  opacity: .7;
+}
+
+/* ── Detail View ── */
+.ts-detail-header {
+  border-bottom: 3px solid;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ts-detail-team {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ts-detail-totals {
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.ts-detail-section {
+  margin-bottom: 20px;
+}
+
+.ts-detail-pos-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-family: var(--font-display);
+}
+
+.ts-detail-pos-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.ts-remaining-pick {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ts-bye-chip {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ts-bye-conflict {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 /* ─── TEAM PANEL (slide-in sidebar) ─── */
 .team-panel-overlay {
   position: fixed;
