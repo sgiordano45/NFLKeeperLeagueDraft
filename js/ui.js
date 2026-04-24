@@ -143,31 +143,53 @@ const UI = {
         const isKeeper = pick.isKeeper;
         const traded = pick.originalOwner !== pick.currentOwner;
 
+        // The color of the team who OWNS this pick (currentOwner)
+        const ownerIdx = State.teams.indexOf(pick.currentOwner);
+        const ownerColor = CONFIG.TEAM_COLORS[ownerIdx % CONFIG.TEAM_COLORS.length];
+
         let classes = "pick";
         if (isCurrent) classes += " is-current";
         if (filled) classes += " is-filled";
         if (isKeeper) classes += " is-keeper";
+        if (traded) classes += " is-traded";
 
-        const bg = filled
-          ? isKeeper
-            ? `linear-gradient(135deg, ${color}cc, ${color}88)`
-            : `${color}bb`
-          : "";
+        let bg = "";
+        if (filled) {
+          // Use the OWNER's color (not the column team) for traded picks
+          const fillColor = traded ? ownerColor : color;
+          bg = isKeeper
+            ? `linear-gradient(135deg, ${fillColor}cc, ${fillColor}88)`
+            : `${fillColor}bb`;
+        } else if (traded && !isKeeper) {
+          // Unfilled traded pick: subtle owner color hint
+          bg = `${ownerColor}18`;
+        }
 
         const borderColor = filled && !isCurrent ? "transparent" : "";
         const keeperBorder = !filled && isKeeper ? `border-color:${color}66` : "";
+        const tradedBorder = !filled && traded && !isKeeper ? `border-color:${ownerColor}55` : "";
 
         let style = "";
         if (bg) style += `background:${bg};`;
         if (borderColor) style += `border-color:${borderColor};`;
         if (keeperBorder) style += keeperBorder + ";";
+        if (tradedBorder) style += tradedBorder + ";";
 
         let inner = "";
         if (isKeeper) inner += `<span class="keeper-badge">K</span>`;
 
+        // Trade badge for unfilled traded picks
+        if (traded && !filled) {
+          inner += `<span class="trade-badge" style="background:${ownerColor}">${this.esc(pick.currentOwner)}</span>`;
+        }
+
         if (filled) {
           inner += `<span class="pick-player">${this.esc(pick.player)}</span>`;
-          if (traded) inner += `<span class="pick-via">via ${this.esc(pick.originalOwner)}</span>`;
+          if (traded) {
+            // Show both: who owns it and where it came from
+            inner += `<span class="pick-via" style="color:${ownerColor}cc">${this.esc(pick.currentOwner)}</span>`;
+            inner += `<span class="pick-via">via ${this.esc(pick.originalOwner)}</span>`;
+          }
         } else {
           inner += `<span class="pick-empty-label">${pick.round}.${String(pick.pickInRound).padStart(2, "0")}</span>`;
         }

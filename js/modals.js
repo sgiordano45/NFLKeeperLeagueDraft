@@ -704,7 +704,7 @@ const Modals = {
       return;
     }
 
-    const positions = ["QB", "RB", "WR", "TE", "K", "DEF"];
+    const positions = ["QB", "RB", "WR", "TE"];
 
     // Build roster data for each team
     const teamData = State.teams.map((team, tIdx) => {
@@ -782,7 +782,7 @@ const Modals = {
   _renderTeamDetail(teamName) {
     const tIdx = State.teams.indexOf(teamName);
     const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
-    const positions = ["QB", "RB", "WR", "TE", "K", "DEF"];
+    const positions = ["QB", "RB", "WR", "TE"];
     const picks = State.picks.filter(p => p.currentOwner === teamName && p.player);
     const remaining = State.picks.filter(p => p.currentOwner === teamName && !p.player);
 

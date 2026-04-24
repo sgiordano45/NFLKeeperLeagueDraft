@@ -304,6 +304,36 @@ header {
   color: rgba(255,255,255,.1);
 }
 
+/* ─── TRADED PICKS ─── */
+.pick.is-traded {
+  border-style: dashed;
+  border-width: 1px;
+}
+
+.pick.is-traded.is-filled {
+  border-style: solid;
+}
+
+.trade-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  font-family: var(--font-display);
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #fff;
+  text-align: center;
+  padding: 1px 4px;
+  border-radius: 0 0 3px 3px;
+  opacity: .85;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ─── POSITION TAG ─── */
 .pick-pos-tag {
   font-family: var(--font-display);

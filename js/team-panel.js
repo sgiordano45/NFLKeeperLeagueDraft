@@ -38,7 +38,7 @@ const TeamPanel = {
     const remainingPicks = myPicks.filter(p => !p.player);
 
     // ── Categorize roster by position ──
-    const positions = ["QB", "RB", "WR", "TE", "K", "DEF"];
+    const positions = ["QB", "RB", "WR", "TE"];
     const roster = {};
     const uncategorized = [];
 
@@ -238,11 +238,9 @@ const TeamPanel = {
     // Typical 14-round roster targets
     const targets = {
       QB: { ideal: 2, label: "Quarterbacks" },
-      RB: { ideal: 4, label: "Running Backs" },
-      WR: { ideal: 4, label: "Wide Receivers" },
+      RB: { ideal: 5, label: "Running Backs" },
+      WR: { ideal: 5, label: "Wide Receivers" },
       TE: { ideal: 2, label: "Tight Ends" },
-      K:  { ideal: 1, label: "Kickers" },
-      DEF:{ ideal: 1, label: "Defense" },
     };
 
     return Object.entries(targets).map(([pos, t]) => {
