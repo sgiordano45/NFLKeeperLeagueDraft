@@ -186,12 +186,16 @@ const UI = {
         if (filled) {
           inner += `<span class="pick-player">${this.esc(pick.player)}</span>`;
           if (traded) {
-            // Show both: who owns it and where it came from
-            inner += `<span class="pick-via" style="color:${ownerColor}cc">${this.esc(pick.currentOwner)}</span>`;
-            inner += `<span class="pick-via">via ${this.esc(pick.originalOwner)}</span>`;
+            // Pick sits in originalOwner's column, show who actually made the pick
+            inner += `<span class="pick-owner-tag" style="color:${ownerColor}">${this.esc(pick.currentOwner)}'s pick</span>`;
           }
         } else {
-          inner += `<span class="pick-empty-label">${pick.round}.${String(pick.pickInRound).padStart(2, "0")}</span>`;
+          if (traded) {
+            // Unfilled: show the pick number below the trade badge
+            inner += `<span class="pick-empty-label">${pick.round}.${String(pick.pickInRound).padStart(2, "0")}</span>`;
+          } else {
+            inner += `<span class="pick-empty-label">${pick.round}.${String(pick.pickInRound).padStart(2, "0")}</span>`;
+          }
         }
         inner += `<span class="pick-overall">${pick.overall}</span>`;
 

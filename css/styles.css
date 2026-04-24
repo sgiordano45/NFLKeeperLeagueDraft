@@ -269,6 +269,15 @@ header {
   margin-top: 1px;
 }
 
+.pick-owner-tag {
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  margin-top: 1px;
+}
+
 .pick-overall {
   font-size: 8px;
   color: rgba(255,255,255,.25);

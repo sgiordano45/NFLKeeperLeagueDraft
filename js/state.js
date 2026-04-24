@@ -100,9 +100,9 @@ const State = {
     return CONFIG.TEAM_COLORS[idx % CONFIG.TEAM_COLORS.length] || "#888";
   },
 
-  // Get the pick for a specific team in a specific round
+  // Get the pick for a specific draft slot (original team position) in a round
   pickForTeamRound(team, round) {
-    return this.picks.find(p => p.round === round && p.currentOwner === team) || null;
+    return this.picks.find(p => p.round === round && p.originalOwner === team) || null;
   },
 
   // Find next open pick after a given index
