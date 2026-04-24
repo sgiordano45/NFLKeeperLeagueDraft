@@ -732,21 +732,20 @@ header {
   color: var(--text-muted);
 }
 
-/* ─── TEAM OWNER NAME (under team label on board) ─── */
+/* ─── TEAM OWNER NAME (under team name in column header) ─── */
 .team-owner-name {
-  display: block;
+  display: inline;
   font-family: var(--font-body);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 400;
   color: var(--text-muted);
   text-transform: none;
   letter-spacing: 0;
-  margin-top: 1px;
 }
 
-/* Highlight my team's row */
-.team-label.my-team {
-  background: rgba(42,157,143,.08) !important;
+/* Highlight my team's column header */
+.my-team-header {
+  background: rgba(42,157,143,.12) !important;
 }
 
 /* ─── CLAIM STATUS ─── */

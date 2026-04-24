@@ -99,39 +99,42 @@ const UI = {
     }
   },
 
-  // ─── DRAFT BOARD ───
+  // ─── DRAFT BOARD (columns = teams, rows = rounds) ───
   renderBoard() {
     const thead = document.getElementById("board-head");
     const tbody = document.getElementById("board-body");
 
-    let headHTML = `<tr><th>Team</th>`;
-    for (let r = 1; r <= CONFIG.NUM_ROUNDS; r++) {
-      headHTML += `<th>Rd ${r}</th>`;
-    }
-    headHTML += `</tr>`;
-    thead.innerHTML = headHTML;
-
-    let bodyHTML = "";
+    // Header row: team names across the top
+    let headHTML = `<tr><th class="round-header">Rd</th>`;
     State.teams.forEach((team, tIdx) => {
       const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
       const ownerName = Auth.getTeamOwnerName(team);
       const isMyTeam = Auth.claimedTeam === team;
+      const myClass = isMyTeam ? " my-team-header" : "";
 
-      let teamLabel = `<span>${this.esc(team)}</span>`;
+      let label = `<span>${this.esc(team)}</span>`;
       if (ownerName) {
-        teamLabel += `<span class="team-owner-name">${this.esc(ownerName)}</span>`;
+        label += `<br><span class="team-owner-name">${this.esc(ownerName)}</span>`;
       }
 
-      const myTeamClass = isMyTeam ? " my-team" : "";
+      headHTML += `<th class="team-col-header${myClass}" style="color:${color};border-top:3px solid ${color}">${label}</th>`;
+    });
+    headHTML += `</tr>`;
+    thead.innerHTML = headHTML;
 
+    // Body: one row per round
+    let bodyHTML = "";
+    for (let r = 1; r <= CONFIG.NUM_ROUNDS; r++) {
       bodyHTML += `<tr>`;
-      bodyHTML += `<td class="team-label${myTeamClass}" style="color:${color};border-left:3px solid ${color}">${teamLabel}</td>`;
+      bodyHTML += `<td class="round-label">Rd ${r}</td>`;
 
-      for (let r = 1; r <= CONFIG.NUM_ROUNDS; r++) {
+      State.teams.forEach((team, tIdx) => {
+        const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
         const pick = State.pickForTeamRound(team, r);
+
         if (!pick) {
           bodyHTML += `<td class="pick-cell"><div class="pick-no-owner">—</div></td>`;
-          continue;
+          return;
         }
 
         const pickIdx = State.picks.indexOf(pick);
@@ -176,9 +179,10 @@ const UI = {
         }
 
         bodyHTML += `<td class="pick-cell"><div class="${classes}" style="${style}" ${onclick}>${inner}</div></td>`;
-      }
+      });
+
       bodyHTML += `</tr>`;
-    });
+    }
 
     tbody.innerHTML = bodyHTML;
   },
