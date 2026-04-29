@@ -76,8 +76,9 @@ const Auth = {
     // Check preassigned emails (commissioner sets these in advance)
     try {
       const preSnap = await window.db.ref(`${CONFIG.FB_PATH}/preassignedEmails`).once("value");
-      const preMap = preSnap.val() || {}; // { "email@x.com": "TeamName" }
-      const emailKey = user.email.toLowerCase();
+      const preMap = preSnap.val() || {}; // { "encoded,email,key": "TeamName" }
+      // Encode the user's email the same way it was stored (periods → commas)
+      const emailKey = user.email.toLowerCase().replace(/\./g, ',');
       if (preMap[emailKey]) {
         const assignedTeam = preMap[emailKey];
         // Auto-claim the team if not already claimed by someone else

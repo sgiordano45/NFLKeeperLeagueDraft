@@ -989,6 +989,14 @@ const Modals = {
   },
 
   // ─── PRE-ASSIGN TEAMS TO EMAILS ───
+  // Firebase keys can't contain periods — encode/decode emails for storage
+  _encodeEmailKey(email) {
+    return email.toLowerCase().replace(/\./g, ',');
+  },
+  _decodeEmailKey(key) {
+    return key.replace(/,/g, '.');
+  },
+
   async openPreassignEmails() {
     if (!Auth.canAdmin()) return;
 
@@ -996,7 +1004,11 @@ const Modals = {
     let preassigned = {};
     try {
       const snap = await window.db.ref(`${CONFIG.FB_PATH}/preassignedEmails`).once("value");
-      preassigned = snap.val() || {};
+      const raw = snap.val() || {};
+      // Decode keys back to real emails for display
+      Object.entries(raw).forEach(([k, v]) => {
+        preassigned[this._decodeEmailKey(k)] = v;
+      });
     } catch (e) {
       preassigned = {};
     }
@@ -1005,7 +1017,6 @@ const Modals = {
       const color = CONFIG.TEAM_COLORS[i % CONFIG.TEAM_COLORS.length];
       // Find any email assigned to this team
       const assignedEmail = Object.entries(preassigned).find(([, t]) => t === team)?.[0] || '';
-      const safeName = team.replace(/'/g, "\\'");
       return `
         <tr>
           <td style="color:${color};font-weight:700;font-family:var(--font-display);white-space:nowrap">${UI.esc(team)}</td>
@@ -1033,8 +1044,8 @@ const Modals = {
   },
 
   async savePreassignEmails() {
-    const newMap = {}; // email → teamName
-    let dupCheck = {};
+    const newMap = {}; // encoded-email-key → teamName
+    const dupCheck = {};
     let hasDuplicate = false;
 
     State.teams.forEach((team, i) => {
@@ -1047,7 +1058,8 @@ const Modals = {
         return;
       }
       dupCheck[email] = true;
-      newMap[email] = team;
+      // Encode periods so Firebase accepts the key
+      newMap[this._encodeEmailKey(email)] = team;
     });
 
     if (hasDuplicate) {
