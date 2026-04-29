@@ -901,6 +901,171 @@ const Modals = {
     `, { wide: true });
   },
 
+  // ─── ADMIN PANEL ───
+  openAdminPanel() {
+    if (!Auth.canAdmin()) return;
+    const expected = CONFIG.NUM_ROUNDS;
+
+    // Count picks per team (by currentOwner)
+    const pickCounts = {};
+    State.teams.forEach(t => pickCounts[t] = 0);
+    State.picks.forEach(p => {
+      if (pickCounts[p.currentOwner] !== undefined) {
+        pickCounts[p.currentOwner]++;
+      }
+    });
+
+    // Orphaned picks (currentOwner not in teams list — rare but possible after team renames)
+    const orphaned = State.picks.filter(p => !State.teams.includes(p.currentOwner));
+
+    // Total picks should equal teams × rounds
+    const totalExpected = CONFIG.NUM_TEAMS * CONFIG.NUM_ROUNDS;
+    const totalActual = State.picks.length;
+    const allGood = Object.values(pickCounts).every(c => c === expected) && orphaned.length === 0;
+
+    const rows = State.teams.map((team, i) => {
+      const color = CONFIG.TEAM_COLORS[i % CONFIG.TEAM_COLORS.length];
+      const count = pickCounts[team];
+      const ok = count === expected;
+      const icon = ok ? '✓' : '✗';
+      const statusStyle = ok
+        ? 'color:var(--success);font-weight:700'
+        : 'color:var(--danger);font-weight:700';
+      const diff = count - expected;
+      const diffStr = diff === 0 ? '' : (diff > 0 ? `+${diff}` : `${diff}`);
+      const filledCount = State.picks.filter(p => p.currentOwner === team && p.player).length;
+      const keeperCount = State.picks.filter(p => p.currentOwner === team && p.isKeeper).length;
+      const tradedIn = State.picks.filter(p => p.currentOwner === team && p.originalOwner !== team).length;
+      const tradedAway = State.picks.filter(p => p.originalOwner === team && p.currentOwner !== team).length;
+
+      return `
+        <tr>
+          <td style="color:${color};font-weight:700;font-family:var(--font-display)">${UI.esc(team)}</td>
+          <td style="text-align:center;${statusStyle}">${icon} ${count}${diffStr ? ` <span style="font-size:10px">(${diffStr})</span>` : ''}</td>
+          <td style="text-align:center;color:var(--text-secondary)">${filledCount}</td>
+          <td style="text-align:center;color:var(--gold)">${keeperCount > 0 ? keeperCount : '—'}</td>
+          <td style="text-align:center;color:var(--text-secondary)">${tradedIn > 0 ? `+${tradedIn}` : '—'}</td>
+          <td style="text-align:center;color:var(--text-secondary)">${tradedAway > 0 ? `-${tradedAway}` : '—'}</td>
+        </tr>`;
+    }).join('');
+
+    let orphanHTML = '';
+    if (orphaned.length > 0) {
+      orphanHTML = `
+        <div class="admin-alert admin-alert-danger">
+          ⚠ ${orphaned.length} pick(s) have an unknown owner (possibly from a team rename):
+          ${orphaned.map(p => `<br>  • Pick #${p.overall} — owner: "${UI.esc(p.currentOwner)}"`).join('')}
+        </div>`;
+    }
+
+    const summaryClass = allGood ? 'admin-alert-success' : 'admin-alert-danger';
+    const summaryMsg = allGood
+      ? `✓ All ${CONFIG.NUM_TEAMS} teams have exactly ${expected} picks. Total: ${totalActual}/${totalExpected}.`
+      : `✗ Pick distribution has issues. Total picks: ${totalActual} (expected ${totalExpected}).`;
+
+    this.open("Admin Panel", `
+      <div class="admin-alert ${summaryClass}" style="margin-bottom:16px">${summaryMsg}</div>
+      ${orphanHTML}
+
+      <h3 class="admin-section-title">Pick Count by Team (expected: ${expected}/team)</h3>
+      <table class="data-table">
+        <thead>
+          <tr><th>Team</th><th style="text-align:center">Picks</th><th style="text-align:center">Drafted</th><th style="text-align:center">Keepers</th><th style="text-align:center">In</th><th style="text-align:center">Out</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:8px">
+        <strong>In</strong> = trades received &nbsp;|&nbsp; <strong>Out</strong> = trades sent
+      </p>
+
+      <div class="admin-section-title" style="margin-top:20px">Quick Actions</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn" onclick="Modals.close();Modals.openTrade()">Trade Picks</button>
+        <button class="btn" onclick="Modals.close();Modals.openKeepers()">Set Keepers</button>
+        <button class="btn" onclick="Modals.close();Modals.openPreassignEmails()">Pre-assign Emails</button>
+        <button class="btn" onclick="Modals.close();Modals.openManageClaims()">Manage Owners</button>
+      </div>
+    `);
+  },
+
+  // ─── PRE-ASSIGN TEAMS TO EMAILS ───
+  async openPreassignEmails() {
+    if (!Auth.canAdmin()) return;
+
+    // Load existing preassignments from Firebase
+    let preassigned = {};
+    try {
+      const snap = await window.db.ref(`${CONFIG.FB_PATH}/preassignedEmails`).once("value");
+      preassigned = snap.val() || {};
+    } catch (e) {
+      preassigned = {};
+    }
+
+    const rows = State.teams.map((team, i) => {
+      const color = CONFIG.TEAM_COLORS[i % CONFIG.TEAM_COLORS.length];
+      // Find any email assigned to this team
+      const assignedEmail = Object.entries(preassigned).find(([, t]) => t === team)?.[0] || '';
+      const safeName = team.replace(/'/g, "\\'");
+      return `
+        <tr>
+          <td style="color:${color};font-weight:700;font-family:var(--font-display);white-space:nowrap">${UI.esc(team)}</td>
+          <td>
+            <input class="form-input" id="preassign-${i}"
+              placeholder="owner@email.com"
+              value="${UI.esc(assignedEmail)}"
+              style="font-size:12px;padding:6px 10px" />
+          </td>
+        </tr>`;
+    }).join('');
+
+    this.open("Pre-assign Teams to Emails", `
+      <p class="modal-hint">
+        Enter the Google email address for each team owner. When they sign in with that Google account,
+        they'll automatically be assigned their team — no "Claim Team" step needed.
+      </p>
+      <table class="data-table" style="margin-bottom:16px">
+        <thead><tr><th>Team</th><th>Owner Email</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <button class="btn btn-gold btn-full" onclick="Modals.savePreassignEmails()">Save Assignments</button>
+      <p id="preassign-status" style="text-align:center;font-size:13px;margin-top:10px;min-height:18px"></p>
+    `);
+  },
+
+  async savePreassignEmails() {
+    const newMap = {}; // email → teamName
+    let dupCheck = {};
+    let hasDuplicate = false;
+
+    State.teams.forEach((team, i) => {
+      const input = document.getElementById(`preassign-${i}`);
+      const email = input ? input.value.trim().toLowerCase() : '';
+      if (!email) return;
+
+      if (dupCheck[email]) {
+        hasDuplicate = true;
+        return;
+      }
+      dupCheck[email] = true;
+      newMap[email] = team;
+    });
+
+    if (hasDuplicate) {
+      document.getElementById("preassign-status").innerHTML =
+        `<span style="color:var(--danger)">✗ Duplicate emails found — each email can only be assigned to one team.</span>`;
+      return;
+    }
+
+    try {
+      await window.db.ref(`${CONFIG.FB_PATH}/preassignedEmails`).set(newMap);
+      document.getElementById("preassign-status").innerHTML =
+        `<span style="color:var(--success)">✓ Saved! Owners will be auto-assigned when they sign in.</span>`;
+    } catch (e) {
+      document.getElementById("preassign-status").innerHTML =
+        `<span style="color:var(--danger)">✗ Failed to save: ${UI.esc(e.message)}</span>`;
+    }
+  },
+
   // Helpers for team summary (avoid dependency on TeamPanel)
   _detectPos(playerStr) {
     if (!playerStr) return null;

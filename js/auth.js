@@ -73,6 +73,32 @@ const Auth = {
       console.error("Error checking commissioner:", err);
     }
 
+    // Check preassigned emails (commissioner sets these in advance)
+    try {
+      const preSnap = await window.db.ref(`${CONFIG.FB_PATH}/preassignedEmails`).once("value");
+      const preMap = preSnap.val() || {}; // { "email@x.com": "TeamName" }
+      const emailKey = user.email.toLowerCase();
+      if (preMap[emailKey]) {
+        const assignedTeam = preMap[emailKey];
+        // Auto-claim the team if not already claimed by someone else
+        const claimRef = window.db.ref(`${CONFIG.FB_PATH}/teamClaims/${assignedTeam}`);
+        const claimSnap = await claimRef.once("value");
+        const existing = claimSnap.val();
+        if (!existing || existing.uid === user.uid) {
+          await claimRef.set({
+            uid: user.uid,
+            displayName: user.displayName || user.email,
+            email: user.email,
+          });
+          this.claimedTeam = assignedTeam;
+          if (!isComm) this.role = "owner";
+          return; // Skip the manual claim check below
+        }
+      }
+    } catch (err) {
+      console.error("Error checking preassigned emails:", err);
+    }
+
     // Check if user has claimed a team (commissioner can also have one)
     const claimSnap = await window.db.ref(`${CONFIG.FB_PATH}/teamClaims`).once("value");
     const claims = claimSnap.val() || {};

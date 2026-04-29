@@ -1320,6 +1320,36 @@ header {
   margin-left: 6px;
 }
 
+/* ─── ADMIN PANEL ─── */
+.admin-alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: .3px;
+}
+
+.admin-alert-success {
+  background: rgba(42,157,143,.15);
+  border: 1px solid var(--success);
+  color: var(--success);
+}
+
+.admin-alert-danger {
+  background: rgba(230,57,70,.12);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+}
+
+.admin-section-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
   header { padding: 10px 12px; }

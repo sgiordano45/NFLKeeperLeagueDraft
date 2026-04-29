@@ -28,6 +28,7 @@ const UI = {
           <button class="btn" onclick="Modals.openTrade()">Trade Picks</button>
           <button class="btn" onclick="Modals.openKeepers()">Keepers</button>
           <button class="btn" onclick="Modals.openPlayers()">Players</button>
+          <button class="btn" onclick="Modals.openAdminPanel()">⚙ Admin</button>
           <button class="btn btn-gold" onclick="App.startDraft()">Start Draft</button>
           <button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>
         `;
