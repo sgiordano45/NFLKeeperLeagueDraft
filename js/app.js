@@ -106,11 +106,26 @@ const App = {
 
   resetDraft() {
     if (!Auth.canAdmin()) return;
-    if (!confirm("Reset entire draft? This will erase all picks, keepers, and trades. This cannot be undone.")) return;
+    if (!confirm("Reset live draft picks? This clears all drafted players but preserves keepers, trades, and pick order. This cannot be undone.")) return;
 
     Timer.stop();
-    State.init();
-    State.mutate(State.serialize());
+
+    // Only clear player values — preserve currentOwner, originalOwner, isKeeper, trades
+    const clearedPicks = State.picks.map(p => ({
+      ...p,
+      player: p.isKeeper ? p.player : null,  // Keep keeper assignments, clear live picks
+    }));
+
+    // Find first open (non-keeper) pick to reset clock to
+    const firstOpen = clearedPicks.findIndex(p => !p.player);
+
+    State.mutate({
+      picks: clearedPicks,
+      currentPickIndex: firstOpen === -1 ? 0 : firstOpen,
+      draftStarted: false,
+      draftComplete: false,
+      timerData: Object.fromEntries(State.teams.map(t => [t, 0])),
+    });
   },
 };
 
