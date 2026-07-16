@@ -42,50 +42,50 @@ const CONFIG = {
   },
 
   // ─── TRADED PICKS ───
-  // Maps overall pick number → current owner (team name) after trades.
+  // Maps overall pick number → current owner (owner name) after trades.
+  // Owner names: Kipp, Scott, Geo, Weaver, Kevin, Stephen, Hughes, Joey, JP, Popson, Drew, Slim Jim
   // Only picks that changed hands are listed; all others retain their original owner.
-  // Generated from the 2026 pre-draft trade data.
   TRADED_PICKS: {
-    7:   "The Bowe Zone",          // Wonderful Secrets Rd1  → Bowe Zone
-    8:   "The Wonderful Secrets",  // Slapsticks Rd1         → Wonderful Secrets
-    9:   "Mr. Sunday",             // Miracle Men Rd1        → Mr. Sunday
-    16:  "Who But",                // Miracle Men Rd2        → Who But
-    17:  "The Bully's",            // Slapsticks Rd2         → Bully's
-    18:  "Who But",                // Wonderful Secrets Rd2  → Who But
-    28:  "The Bowe Zone",          // Who But Rd3            → Bowe Zone
-    33:  "The Wonderful Secrets",  // Miracle Men Rd3        → Wonderful Secrets
-    38:  "Sad George",             // Bowe Zone Rd4          → Sad George
-    39:  "Who But",                // Emmett's Dad Rd4       → Who But
-    40:  "Sad George",             // Miracle Men Rd4        → Sad George
-    42:  "Mr. Sunday",             // Wonderful Secrets Rd4  → Mr. Sunday
-    55:  "The Slapsticks",         // Wonderful Secrets Rd5  → Slapsticks
-    57:  "Mr. Sunday",             // Miracle Men Rd5        → Mr. Sunday
-    62:  "Emmett's Dad",           // Bowe Zone Rd6          → Emmett's Dad
-    64:  "The Bowe Zone",          // Miracle Men Rd6        → Bowe Zone
-    70:  "The Bowe Zone",          // Sad George Rd6         → Bowe Zone
-    71:  "Slim Jim",               // Sheaquon Rd6           → Slim Jim
-    73:  "The Slapsticks",         // Bully's Rd7            → Slapsticks
-    75:  "Who But",                // Sad George Rd7         → Who But
-    76:  "Mr. Sunday",             // Who But Rd7            → Mr. Sunday
-    81:  "The Wonderful Secrets",  // Miracle Men Rd7        → Wonderful Secrets
-    88:  "Who But",                // Miracle Men Rd8        → Who But
-    89:  "Sheaquon",               // Slapsticks Rd8         → Sheaquon
-    104: "Mr. Sunday",             // Slapsticks Rd9         → Mr. Sunday
-    105: "Sad George",             // Miracle Men Rd9        → Sad George
-    112: "Sad George",             // Miracle Men Rd10       → Sad George
-    116: "Who But",                // Mr. Sunday Rd10        → Who But
-    118: "Sheaquon",               // Sad George Rd10        → Sheaquon
-    125: "Who But",                // Mr. Sunday Rd11        → Who But
-    129: "Who But",                // Miracle Men Rd11       → Who But
-    136: "Who But",                // Miracle Men Rd12       → Who But
-    140: "The Wonderful Secrets",  // Mr. Sunday Rd12        → Wonderful Secrets
-    147: "Who But",                // Sad George Rd13        → Who But
-    149: "The Slapsticks",         // Mr. Sunday Rd13        → Slapsticks
-    153: "Who But",                // Miracle Men Rd13       → Who But
-    157: "The Slapsticks",         // Slim Jim Rd14          → Slapsticks
-    160: "Who But",                // Miracle Men Rd14       → Who But
-    164: "Who But",                // Mr. Sunday Rd14        → Who But
-    166: "Who But",                // Sad George Rd14        → Who But
+    7:   "Drew",    // Hughes Rd1  → Drew
+    8:   "Hughes",  // Joey Rd1    → Hughes
+    9:   "Kevin",   // JP Rd1      → Kevin
+    16:  "Weaver",  // JP Rd2      → Weaver
+    17:  "Kipp",    // Joey Rd2    → Kipp
+    18:  "Weaver",  // Hughes Rd2  → Weaver
+    28:  "Drew",    // Weaver Rd3  → Drew
+    33:  "Hughes",  // JP Rd3      → Hughes
+    38:  "Geo",     // Drew Rd4    → Geo
+    39:  "Weaver",  // Popson Rd4  → Weaver
+    40:  "Geo",     // JP Rd4      → Geo
+    42:  "Kevin",   // Hughes Rd4  → Kevin
+    55:  "Joey",    // Hughes Rd5  → Joey
+    57:  "Kevin",   // JP Rd5      → Kevin
+    62:  "Popson",  // Drew Rd6    → Popson
+    64:  "Drew",    // JP Rd6      → Drew
+    70:  "Drew",    // Geo Rd6     → Drew
+    71:  "Slim Jim",// Scott Rd6   → Slim Jim
+    73:  "Joey",    // Kipp Rd7    → Joey
+    75:  "Weaver",  // Geo Rd7     → Weaver
+    76:  "Kevin",   // Weaver Rd7  → Kevin
+    81:  "Hughes",  // JP Rd7      → Hughes
+    88:  "Weaver",  // JP Rd8      → Weaver
+    89:  "Scott",   // Joey Rd8    → Scott
+    104: "Kevin",   // Joey Rd9    → Kevin
+    105: "Geo",     // JP Rd9      → Geo
+    112: "Geo",     // JP Rd10     → Geo
+    116: "Weaver",  // Kevin Rd10  → Weaver
+    118: "Scott",   // Geo Rd10    → Scott
+    125: "Weaver",  // Kevin Rd11  → Weaver
+    129: "Weaver",  // JP Rd11     → Weaver
+    136: "Weaver",  // JP Rd12     → Weaver
+    140: "Hughes",  // Kevin Rd12  → Hughes
+    147: "Weaver",  // Geo Rd13    → Weaver
+    149: "Joey",    // Kevin Rd13  → Joey
+    153: "Weaver",  // JP Rd13     → Weaver
+    157: "Joey",    // Slim Jim Rd14 → Joey
+    160: "Weaver",  // JP Rd14     → Weaver
+    164: "Weaver",  // Kevin Rd14  → Weaver
+    166: "Weaver",  // Geo Rd14    → Weaver
   },
 
   // Firebase path for this draft
