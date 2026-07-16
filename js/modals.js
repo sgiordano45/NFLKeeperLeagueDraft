@@ -145,7 +145,11 @@ const Modals = {
       </div>
       <div class="form-group">
         <label class="form-label">Player Name</label>
-        <input class="form-input" id="keeper-player" placeholder="e.g. Patrick Mahomes" />
+        <input class="form-input" id="keeper-player"
+          placeholder="${Players.count() > 0 ? 'Search player…' : 'e.g. Patrick Mahomes'}"
+          oninput="Modals.onKeeperSearch(this.value)"
+          onkeydown="if(event.key==='Enter'&&Modals._keeperAutoIdx<0){}else if(event.key==='ArrowDown'){event.preventDefault();Modals._keeperAutoIdx=Math.min(Modals._keeperAutoIdx+1,Modals._keeperResults.length-1);Modals._highlightKeeperAC();}else if(event.key==='ArrowUp'){event.preventDefault();Modals._keeperAutoIdx=Math.max(Modals._keeperAutoIdx-1,-1);Modals._highlightKeeperAC();}else if(event.key==='Enter'&&Modals._keeperAutoIdx>=0){event.preventDefault();Modals.selectKeeperPlayer(Modals._keeperAutoIdx);}else if(event.key==='Escape'){document.getElementById('keeper-autocomplete').classList.add('hidden');}" />
+        <div id="keeper-autocomplete" class="draft-autocomplete hidden"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Round</label>
@@ -187,6 +191,72 @@ const Modals = {
     );
     State.mutate({ picks: newPicks });
     this.openKeepers(); // Refresh
+  },
+
+  // ─── KEEPER AUTOCOMPLETE ───
+  _keeperAutoIdx: -1,
+  _keeperResults: [],
+
+  onKeeperSearch(query) {
+    const ac = document.getElementById("keeper-autocomplete");
+    if (!ac) return;
+
+    if (!query || query.length < 2 || Players.count() === 0) {
+      ac.classList.add("hidden");
+      ac.innerHTML = "";
+      this._keeperResults = [];
+      this._keeperAutoIdx = -1;
+      return;
+    }
+
+    // Search ALL players (not just undrafted — keepers are set before the draft)
+    const q = query.toUpperCase();
+    this._keeperResults = Players.getAll()
+      .filter(p => p.name.toUpperCase().includes(q))
+      .slice(0, 10);
+    this._keeperAutoIdx = -1;
+
+    if (this._keeperResults.length === 0) {
+      ac.innerHTML = `<div class="ac-empty">No players found</div>`;
+      ac.classList.remove("hidden");
+      return;
+    }
+
+    ac.innerHTML = this._keeperResults.map((p, i) => `
+      <div class="ac-item"
+        onmousedown="Modals.selectKeeperPlayer(${i})"
+        onmouseenter="Modals._keeperAutoIdx=${i};Modals._highlightKeeperAC()">
+        <span class="ac-name">${UI.esc(p.name)}</span>
+        <span class="ac-meta">
+          <span class="player-pos-badge pos-${p.pos.toLowerCase()}">${p.pos === 'DEF' ? 'D/ST' : p.pos}</span>
+          ${p.team ? `<span class="ac-team">${UI.esc(p.team)}</span>` : ''}
+          ${p.bye ? `<span class="ac-bye">Bye ${p.bye}</span>` : ''}
+          ${p.adp < 999 ? `<span class="ac-adp">ADP ${Math.round(p.adp)}</span>` : ''}
+        </span>
+      </div>
+    `).join('');
+    ac.classList.remove("hidden");
+  },
+
+  _highlightKeeperAC() {
+    const items = document.querySelectorAll("#keeper-autocomplete .ac-item");
+    items.forEach((el, i) => {
+      el.classList.toggle("ac-active", i === this._keeperAutoIdx);
+    });
+  },
+
+  selectKeeperPlayer(idx) {
+    const p = this._keeperResults[idx];
+    if (!p) return;
+
+    const input = document.getElementById("keeper-player");
+    if (input) input.value = `${p.name}, ${p.pos}`;
+
+    const ac = document.getElementById("keeper-autocomplete");
+    if (ac) ac.classList.add("hidden");
+
+    this._keeperResults = [];
+    this._keeperAutoIdx = -1;
   },
 
   // ─── DRAFT PLAYER ───
