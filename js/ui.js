@@ -18,11 +18,16 @@ const UI = {
     const status = document.getElementById("clock-status");
     nav.innerHTML = "";
 
+    const isComm = Auth.isCommissioner();
+
     if (!State.draftStarted) {
       nav.innerHTML = `
         <button class="btn" onclick="Modals.openTeams()">Teams</button>
         <button class="btn" onclick="Modals.openTrade()">Trade Picks</button>
         <button class="btn" onclick="Modals.openKeepers()">Keepers</button>
+        ${isComm ? `<button class="btn" onclick="Modals.openPlayers()">Players</button>` : ''}
+        ${isComm ? `<button class="btn" onclick="Modals.openAdminPanel()">Admin</button>` : ''}
+        ${isComm ? `<button class="btn" onclick="Modals.openManageClaims()">Manage Owners</button>` : ''}
         <button class="btn btn-gold" onclick="App.startDraft()">Start Draft</button>
         <button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>
       `;
@@ -37,7 +42,7 @@ const UI = {
           on the clock
         `;
       }
-      const resetBtn = State.isCommissioner
+      const resetBtn = isComm
         ? `<button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>`
         : ``;
       nav.innerHTML = `
@@ -45,17 +50,19 @@ const UI = {
         <button class="btn" onclick="App.undoLast()">Undo</button>
         <button class="btn" onclick="Modals.openHistory()">History</button>
         <button class="btn" onclick="Modals.openTimerSummary()">Timer</button>
+        ${isComm ? `<button class="btn" onclick="Modals.openAdminPanel()">Admin</button>` : ''}
         ${resetBtn}
       `;
     } else {
       status.innerHTML = `<span class="draft-complete-text">Draft Complete</span>`;
-      const resetBtn = State.isCommissioner
+      const resetBtn = isComm
         ? `<button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>`
         : ``;
       nav.innerHTML = `
         <button class="btn" onclick="Modals.openHistory()">History</button>
         <button class="btn" onclick="Modals.openTimerSummary()">Timer</button>
         <button class="btn" onclick="App.undoLast()">Undo Last</button>
+        ${isComm ? `<button class="btn" onclick="Modals.openAdminPanel()">Admin</button>` : ''}
         ${resetBtn}
       `;
     }
