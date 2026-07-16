@@ -36,12 +36,14 @@ const State = {
     for (let r = 0; r < CONFIG.NUM_ROUNDS; r++) {
       const order = r % 2 === 0 ? [...teams] : [...teams].reverse();
       order.forEach((team, i) => {
+        const overall = r * CONFIG.NUM_TEAMS + i + 1;
+        const tradedTo = CONFIG.TRADED_PICKS?.[overall] ?? null;
         picks.push({
-          overall: r * CONFIG.NUM_TEAMS + i + 1,
+          overall,
           round: r + 1,
           pickInRound: i + 1,
           originalOwner: team,
-          currentOwner: team,
+          currentOwner: tradedTo || team,
           player: null,
           isKeeper: false,
         });
