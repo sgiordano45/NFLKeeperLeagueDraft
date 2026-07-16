@@ -11,7 +11,7 @@ const CONFIG = {
 
   TEAM_COLORS: [
     "#E63946", "#457B9D", "#2A9D8F", "#E9C46A", "#F4A261", "#264653",
-    "#6A0572", "#1B998B", "#FF6B35", "#004E89", "#A23B72", "#C18C5D"
+    "#6A0572", "#7CB518", "#FF6B35", "#004E89", "#A23B72", "#C18C5D"
   ],
 
   // Position colors for drafted players

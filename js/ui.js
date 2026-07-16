@@ -115,17 +115,8 @@ const UI = {
         let playerTextColor = "#fff";
         const parsed = filled ? CONFIG.parsePlayer(pick.player) : null;
 
-        if (filled && parsed && parsed.pos) {
-          const posCol = CONFIG.posColor(parsed.pos);
-          if (posCol) {
-            bg = isKeeper
-              ? `linear-gradient(135deg, ${posCol.bg}, ${posCol.bg}cc)`
-              : posCol.bg;
-            playerTextColor = posCol.text;
-            classes += ` pos-${parsed.pos.toLowerCase()}`;
-          }
-        } else if (filled) {
-          // No position — fall back to team color
+        if (filled) {
+          // Always use team color for filled picks
           const teamColor = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
           bg = isKeeper
             ? `linear-gradient(135deg, ${teamColor}cc, ${teamColor}88)`
