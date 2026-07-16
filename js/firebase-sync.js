@@ -44,12 +44,17 @@ const FirebaseSync = {
   },
 
   // Push local state to Firebase
-  // Uses update() instead of set() to preserve sibling data (players, watchlists, teamClaims)
+  // Writes each key as a separate child update to stay within security rule paths.
+  // (Writing to the year root is blocked by rules; children like picks/teams/etc. are allowed.)
   push(data) {
     if (this._offlineMode || !this._ref) return;
 
     this._pushing = true;
-    this._ref.update(data)
+    const promises = Object.entries(data).map(([key, value]) =>
+      this._ref.child(key).set(value)
+    );
+
+    Promise.all(promises)
       .then(() => {
         setTimeout(() => { this._pushing = false; }, 100);
       })
