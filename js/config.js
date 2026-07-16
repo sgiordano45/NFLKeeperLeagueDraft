@@ -46,46 +46,43 @@ const CONFIG = {
   // Owner names: Kipp, Scott, Geo, Weaver, Kevin, Stephen, Hughes, Joey, JP, Popson, Drew, Slim Jim
   // Only picks that changed hands are listed; all others retain their original owner.
   TRADED_PICKS: {
-    7:   "Drew",    // Hughes Rd1  → Drew
-    8:   "Hughes",  // Joey Rd1    → Hughes
-    9:   "Kevin",   // JP Rd1      → Kevin
-    16:  "Weaver",  // JP Rd2      → Weaver
-    17:  "Kipp",    // Joey Rd2    → Kipp
-    18:  "Weaver",  // Hughes Rd2  → Weaver
-    28:  "Drew",    // Weaver Rd3  → Drew
-    33:  "Hughes",  // JP Rd3      → Hughes
-    38:  "Geo",     // Drew Rd4    → Geo
-    39:  "Weaver",  // Popson Rd4  → Weaver
-    40:  "Geo",     // JP Rd4      → Geo
-    42:  "Kevin",   // Hughes Rd4  → Kevin
-    55:  "Joey",    // Hughes Rd5  → Joey
-    57:  "Kevin",   // JP Rd5      → Kevin
-    62:  "Popson",  // Drew Rd6    → Popson
-    64:  "Drew",    // JP Rd6      → Drew
-    70:  "Drew",    // Geo Rd6     → Drew
-    71:  "Slim Jim",// Scott Rd6   → Slim Jim
-    73:  "Joey",    // Kipp Rd7    → Joey
-    75:  "Weaver",  // Geo Rd7     → Weaver
-    76:  "Kevin",   // Weaver Rd7  → Kevin
-    81:  "Hughes",  // JP Rd7      → Hughes
-    88:  "Weaver",  // JP Rd8      → Weaver
-    89:  "Scott",   // Joey Rd8    → Scott
-    104: "Kevin",   // Joey Rd9    → Kevin
-    105: "Geo",     // JP Rd9      → Geo
-    112: "Geo",     // JP Rd10     → Geo
-    116: "Weaver",  // Kevin Rd10  → Weaver
-    118: "Scott",   // Geo Rd10    → Scott
-    125: "Weaver",  // Kevin Rd11  → Weaver
-    129: "Weaver",  // JP Rd11     → Weaver
-    136: "Weaver",  // JP Rd12     → Weaver
-    140: "Hughes",  // Kevin Rd12  → Hughes
-    147: "Weaver",  // Geo Rd13    → Weaver
-    149: "Joey",    // Kevin Rd13  → Joey
-    153: "Weaver",  // JP Rd13     → Weaver
-    157: "Joey",    // Slim Jim Rd14 → Joey
-    160: "Weaver",  // JP Rd14     → Weaver
-    164: "Weaver",  // Kevin Rd14  → Weaver
-    166: "Weaver",  // Geo Rd14    → Weaver
+    7:   "Drew",     // Hughes Rd1  → Drew
+    8:   "Hughes",   // Joey Rd1    → Hughes
+    9:   "Kevin",    // JP Rd1      → Kevin
+    11:  "Weaver",   // Drew Rd1    → Weaver
+    14:  "Weaver",   // Drew Rd2    → Weaver
+    17:  "Kipp",     // Joey Rd2    → Kipp
+    18:  "JP",       // Hughes Rd2  → JP
+    26:  "Geo",      // Scott Rd3   → Geo
+    28:  "Drew",     // Weaver Rd3  → Drew
+    33:  "Hughes",   // JP Rd3      → Hughes
+    38:  "Geo",      // Drew Rd4    → Geo
+    39:  "JP",       // Popson Rd4  → JP
+    40:  "Geo",      // JP Rd4      → Geo
+    42:  "Kevin",    // Hughes Rd4  → Kevin
+    55:  "Joey",     // Hughes Rd5  → Joey
+    57:  "Kevin",    // JP Rd5      → Kevin
+    62:  "Popson",   // Drew Rd6    → Popson
+    64:  "Drew",     // JP Rd6      → Drew
+    70:  "Drew",     // Geo Rd6     → Drew
+    71:  "Slim Jim", // Scott Rd6   → Slim Jim
+    73:  "Joey",     // Kipp Rd7    → Joey
+    75:  "JP",       // Geo Rd7     → JP
+    76:  "Kevin",    // Weaver Rd7  → Kevin
+    81:  "Hughes",   // JP Rd7      → Hughes
+    89:  "Scott",    // Joey Rd8    → Scott
+    104: "Kevin",    // Joey Rd9    → Kevin
+    105: "Geo",      // JP Rd9      → Geo
+    112: "Geo",      // JP Rd10     → Geo
+    116: "JP",       // Kevin Rd10  → JP
+    118: "Scott",    // Geo Rd10    → Scott
+    125: "JP",       // Kevin Rd11  → JP
+    140: "Hughes",   // Kevin Rd12  → Hughes
+    147: "JP",       // Geo Rd13    → JP
+    149: "Joey",     // Kevin Rd13  → Joey
+    157: "Joey",     // Slim Jim Rd14 → Joey
+    164: "JP",       // Kevin Rd14  → JP
+    166: "JP",       // Geo Rd14    → JP
   },
 
   // Firebase path for this draft
