@@ -64,8 +64,8 @@ const Auth = {
     let isComm = false;
     try {
       const commSnap = await window.db.ref("commissioner").once("value");
-      const commEmail = commSnap.val();
-      if (commEmail && user.email.toLowerCase() === commEmail.toLowerCase()) {
+      const commUid = commSnap.val();
+      if (commUid && user.uid === commUid) {
         isComm = true;
         this.role = "commissioner";
       }
