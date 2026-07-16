@@ -158,7 +158,7 @@ const UI = {
         } else if (traded) {
           // Empty traded pick: show current owner as colored badge
           const ownerColor = State.teamColor(pick.currentOwner);
-          inner += `<span class="pick-trade-badge" style="background:${ownerColor}">${this.esc(pick.currentOwner)}</span>`;
+          inner += `<span class="trade-badge" style="background:${ownerColor}">${this.esc(pick.currentOwner)}</span>`;
           inner += `<span class="pick-empty-label">${pick.round}.${String(pick.pickInRound).padStart(2, "0")}</span>`;
         } else {
           inner += `<span class="pick-empty-label">${pick.round}.${String(pick.pickInRound).padStart(2, "0")}</span>`;
