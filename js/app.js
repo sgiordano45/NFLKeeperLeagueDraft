@@ -104,6 +104,36 @@ const App = {
     Timer.start(newPicks[lastIdx].currentOwner);
   },
 
+  // One-time: regenerate picks with TRADED_PICKS applied, preserving keeper assignments
+  applyTrades() {
+    if (!Auth.canAdmin()) return;
+    if (!confirm("Apply pre-draft pick trades? This regenerates pick ownership from CONFIG.TRADED_PICKS and preserves any keeper assignments already set.")) return;
+
+    // Build fresh picks with trades applied
+    const freshPicks = State.generateSnakeDraft(State.teams);
+
+    // Re-apply any keeper assignments from current picks onto fresh picks
+    State.picks.forEach(p => {
+      if (p.isKeeper && p.player) {
+        const match = freshPicks.find(fp => fp.overall === p.overall);
+        if (match) {
+          match.player = p.player;
+          match.isKeeper = true;
+        }
+      }
+    });
+
+    const firstOpen = freshPicks.findIndex(fp => !fp.player);
+
+    State.mutate({
+      picks: freshPicks,
+      currentPickIndex: firstOpen === -1 ? 0 : firstOpen,
+      draftStarted: false,
+      draftComplete: false,
+      timerData: Object.fromEntries(State.teams.map(t => [t, 0])),
+    });
+  },
+
   resetDraft() {
     if (!Auth.canAdmin()) return;
     if (!confirm("Reset live draft picks? This clears all drafted players but preserves keepers, trades, and pick order. This cannot be undone.")) return;

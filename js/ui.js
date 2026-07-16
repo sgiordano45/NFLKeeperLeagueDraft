@@ -28,6 +28,7 @@ const UI = {
         ${isComm ? `<button class="btn" onclick="Modals.openPlayers()">Players</button>` : ''}
         ${isComm ? `<button class="btn" onclick="Modals.openAdminPanel()">Admin</button>` : ''}
         ${isComm ? `<button class="btn" onclick="Modals.openManageClaims()">Manage Owners</button>` : ''}
+        ${isComm ? `<button class="btn btn-success btn-sm" onclick="App.applyTrades()">Apply Trades</button>` : ''}
         ${Auth.hasTeam() ? `<button class="btn" onclick="TeamPanel.toggle()">My Team</button>` : ''}
         <button class="btn btn-gold" onclick="App.startDraft()">Start Draft</button>
         <button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>
