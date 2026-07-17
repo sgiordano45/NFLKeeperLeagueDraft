@@ -6,7 +6,7 @@
 
 const TradeAnalyzer = (() => {
 
-  const ADP_WINDOW = 3; // ±3 picks around each pick's overall number
+  let ADP_WINDOW = 3; // ±N picks around each pick's overall number (user-adjustable)
 
   // ─── Fantasy Pick Value Curve ───
   // Exponential decay tuned for fantasy redraft (12-team, 14-round).
@@ -63,10 +63,23 @@ const TradeAnalyzer = (() => {
           <button class="modal-close" onclick="TradeAnalyzer.close()">×</button>
         </div>
 
-        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">
-          Enter overall pick numbers for each side. Players with ADP within
-          ±${ADP_WINDOW} of each pick will appear.
-        </p>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+          <p style="color:var(--text-secondary);font-size:13px;margin:0;flex:1;min-width:180px">
+            Enter overall pick numbers for each side. Players with ADP near each pick will appear.
+          </p>
+          <label style="display:flex;align-items:center;gap:7px;white-space:nowrap">
+            <span style="font-family:var(--font-display);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px">ADP ±</span>
+            <input
+              type="number"
+              id="ta-adp-window"
+              class="form-input"
+              value="${ADP_WINDOW}"
+              min="0" max="10" step="1"
+              style="width:60px;font-size:13px;padding:5px 8px;text-align:center"
+              title="Show players within ±N picks of each slot's ADP"
+            />
+          </label>
+        </div>
 
         <details class="ta-chart-details">
           <summary class="ta-chart-summary">📊 Pick Value Reference Chart</summary>
@@ -126,6 +139,11 @@ const TradeAnalyzer = (() => {
 
   // ─── Core analysis ───
   function _analyze() {
+    // Read user-set ADP window before analyzing
+    const windowEl = document.getElementById("ta-adp-window");
+    const parsed = parseInt(windowEl?.value, 10);
+    ADP_WINDOW = (!isNaN(parsed) && parsed >= 0) ? parsed : 3;
+
     const sideA = _getInputs("a");
     const sideB = _getInputs("b");
 
