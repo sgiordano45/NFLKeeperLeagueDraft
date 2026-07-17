@@ -25,6 +25,7 @@ const UI = {
         <button class="btn" onclick="Modals.openTeams()">Teams</button>
         <button class="btn" onclick="Modals.openTrade()">Trade Picks</button>
         <button class="btn" onclick="Modals.openKeepers()">Keepers</button>
+        <button class="btn" onclick="TradeAnalyzer.open()">Trade Analyzer</button>
         ${isComm ? `<button class="btn" onclick="Modals.openPlayers()">Players</button>` : ''}
         ${isComm ? `<button class="btn" onclick="Modals.openAdminPanel()">Admin</button>` : ''}
         ${isComm ? `<button class="btn" onclick="Modals.openManageClaims()">Manage Owners</button>` : ''}
@@ -52,6 +53,7 @@ const UI = {
         <button class="btn" onclick="App.undoLast()">Undo</button>
         <button class="btn" onclick="Modals.openHistory()">History</button>
         <button class="btn" onclick="Modals.openTimerSummary()">Timer</button>
+        <button class="btn" onclick="TradeAnalyzer.open()">Trade Analyzer</button>
         ${Auth.hasTeam() ? `<button class="btn" onclick="TeamPanel.toggle()">My Team</button>` : ''}
         ${isComm ? `<button class="btn" onclick="Modals.openAdminPanel()">Admin</button>` : ''}
         ${resetBtn}
@@ -65,6 +67,7 @@ const UI = {
         <button class="btn" onclick="Modals.openHistory()">History</button>
         <button class="btn" onclick="Modals.openTimerSummary()">Timer</button>
         <button class="btn" onclick="App.undoLast()">Undo Last</button>
+        <button class="btn" onclick="TradeAnalyzer.open()">Trade Analyzer</button>
         ${Auth.hasTeam() ? `<button class="btn" onclick="TeamPanel.toggle()">My Team</button>` : ''}
         ${isComm ? `<button class="btn" onclick="Modals.openAdminPanel()">Admin</button>` : ''}
         ${resetBtn}
