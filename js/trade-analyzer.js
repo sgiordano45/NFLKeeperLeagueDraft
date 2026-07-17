@@ -1,6 +1,6 @@
 // ─── Trade Analyzer ───
 // Analyzes a pick swap by showing players with ADP near each pick number.
-// Reads from State.players (loaded from Firebase) and State.picks.
+// Reads from Players._db (loaded from Firebase via players.js).
 //
 // Usage: TradeAnalyzer.open()
 
@@ -20,7 +20,6 @@ const TradeAnalyzer = (() => {
 
   // ─── Build & inject modal HTML ───
   function _render() {
-    // Remove stale instance if present
     const old = document.getElementById("trade-analyzer-backdrop");
     if (old) old.remove();
 
@@ -29,17 +28,14 @@ const TradeAnalyzer = (() => {
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = _modalHTML();
 
-    // Close on backdrop click
     backdrop.addEventListener("click", (e) => {
       if (e.target === backdrop) close();
     });
 
     document.body.appendChild(backdrop);
 
-    // Wire up analyze button
     document.getElementById("ta-analyze-btn").addEventListener("click", _analyze);
 
-    // Allow Enter key in inputs
     backdrop.querySelectorAll(".ta-pick-input").forEach(inp => {
       inp.addEventListener("keydown", (e) => {
         if (e.key === "Enter") _analyze();
@@ -48,43 +44,35 @@ const TradeAnalyzer = (() => {
   }
 
   function _modalHTML() {
-    // Build a quick pick selector list from current State picks (overall numbers)
-    const pickOptions = State.picks
-      .filter(p => !p.player && !p.isKeeper)
-      .map(p => `<option value="${p.overall}">#${p.overall} — ${p.currentOwner} (Rd ${p.round}.${String(p.pickInRound).padStart(2,"0")})</option>`)
-      .join("");
-
     return `
       <div class="modal" id="trade-analyzer-modal" style="width:680px;max-width:96vw">
         <div class="modal-header">
-          <h2>⚖️ Trade Analyzer</h2>
+          <h2>Trade Analyzer</h2>
           <button class="modal-close" onclick="TradeAnalyzer.close()">×</button>
         </div>
 
-        <p class="modal-hint" style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">
-          Enter overall pick numbers for each side of the trade. Players with ADP within
-          ±${ADP_WINDOW} picks will appear for each slot.
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">
+          Enter overall pick numbers for each side. Players with ADP within
+          ±${ADP_WINDOW} of each pick will appear.
         </p>
 
         <div class="ta-sides">
-          <!-- Side A -->
           <div class="ta-side">
             <div class="ta-side-label" style="color:var(--gold)">Side A — Giving</div>
-            ${_pickInputRow("a", 0, pickOptions)}
-            ${_pickInputRow("a", 1, pickOptions)}
-            ${_pickInputRow("a", 2, pickOptions)}
-            ${_pickInputRow("a", 3, pickOptions)}
+            ${_pickInputRow("a", 0)}
+            ${_pickInputRow("a", 1)}
+            ${_pickInputRow("a", 2)}
+            ${_pickInputRow("a", 3)}
           </div>
 
           <div class="ta-vs">VS</div>
 
-          <!-- Side B -->
           <div class="ta-side">
             <div class="ta-side-label" style="color:#64B5F6">Side B — Receiving</div>
-            ${_pickInputRow("b", 0, pickOptions)}
-            ${_pickInputRow("b", 1, pickOptions)}
-            ${_pickInputRow("b", 2, pickOptions)}
-            ${_pickInputRow("b", 3, pickOptions)}
+            ${_pickInputRow("b", 0)}
+            ${_pickInputRow("b", 1)}
+            ${_pickInputRow("b", 2)}
+            ${_pickInputRow("b", 3)}
           </div>
         </div>
 
@@ -95,7 +83,7 @@ const TradeAnalyzer = (() => {
     `;
   }
 
-  function _pickInputRow(side, idx, pickOptions) {
+  function _pickInputRow(side, idx) {
     const id = `ta-${side}-pick-${idx}`;
     return `
       <div class="form-group" style="margin-bottom:6px">
@@ -124,14 +112,13 @@ const TradeAnalyzer = (() => {
     if (sideA.length === 0) { _showError("Side A has no picks entered."); return; }
     if (sideB.length === 0) { _showError("Side B has no picks entered."); return; }
 
-    const playersLoaded = State.players && State.players.length > 0;
+    const playersLoaded = Players.isLoaded() && Players._db.length > 0;
 
     const resultsEl = document.getElementById("ta-results");
     resultsEl.classList.remove("hidden");
 
     let html = `<div class="ta-result-sides">`;
 
-    // Side A
     html += `<div class="ta-result-side">`;
     html += `<div class="ta-result-side-label" style="color:var(--gold)">Side A — Giving</div>`;
     sideA.forEach(overall => {
@@ -139,7 +126,6 @@ const TradeAnalyzer = (() => {
     });
     html += `</div>`;
 
-    // Side B
     html += `<div class="ta-result-side">`;
     html += `<div class="ta-result-side-label" style="color:#64B5F6">Side B — Receiving</div>`;
     sideB.forEach(overall => {
@@ -149,14 +135,11 @@ const TradeAnalyzer = (() => {
 
     html += `</div>`;
 
-    // Value summary
     const aValue = _sideValue(sideA);
     const bValue = _sideValue(sideB);
     html += _valueSummary(aValue, bValue, sideA, sideB, playersLoaded);
 
     resultsEl.innerHTML = html;
-
-    // Smooth scroll to results
     resultsEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
@@ -204,7 +187,9 @@ const TradeAnalyzer = (() => {
         html += `<div class="ta-player-list">`;
         nearby.forEach(p => {
           const adpDelta = Math.round(p.adp) - overall;
-          const deltaStr = adpDelta === 0 ? "ADP=" + Math.round(p.adp) : (adpDelta > 0 ? `ADP +${adpDelta}` : `ADP ${adpDelta}`);
+          const deltaStr = adpDelta === 0
+            ? `ADP=${Math.round(p.adp)}`
+            : adpDelta > 0 ? `ADP +${adpDelta}` : `ADP ${adpDelta}`;
           const posCol = CONFIG.posColor(p.pos);
           const posStyle = posCol
             ? `background:${posCol.bg};color:${posCol.text}`
@@ -230,7 +215,7 @@ const TradeAnalyzer = (() => {
 
   // ─── Value summary ───
   function _valueSummary(aValue, bValue, sideA, sideB, playersLoaded) {
-    const diff = aValue - bValue; // positive = A is giving more
+    const diff = aValue - bValue;
     let verdict = "";
     let verdictColor = "var(--text-secondary)";
 
@@ -247,7 +232,6 @@ const TradeAnalyzer = (() => {
       verdictColor = "var(--gold)";
     }
 
-    // Pick count fairness note
     let countNote = "";
     if (sideA.length !== sideB.length) {
       countNote = `<div class="ta-count-note">Note: unequal number of picks (${sideA.length} vs ${sideB.length}) — the extra pick has inherent value.</div>`;
@@ -258,24 +242,20 @@ const TradeAnalyzer = (() => {
         <div class="ta-verdict-label">Trade Value</div>
         <div class="ta-verdict-text" style="color:${verdictColor}">${verdict}</div>
         ${countNote}
-        ${playersLoaded ? `<div class="ta-verdict-sub">Based on median ADP of available players near each pick. Lower ADP = better value.</div>` : ""}
+        ${playersLoaded ? `<div class="ta-verdict-sub">Based on best available ADP near each pick. Lower ADP = better value.</div>` : ""}
       </div>
     `;
   }
 
-  // ─── Value: sum of "inverse ADP" for best player near each pick ───
-  // Higher overall pick number = lower value, so we use (totalPicks - medianADP)
   function _sideValue(overalls) {
     const total = CONFIG.NUM_TEAMS * CONFIG.NUM_ROUNDS;
     let sum = 0;
     overalls.forEach(overall => {
       const nearby = _playersNearADP(overall, ADP_WINDOW);
       if (nearby.length > 0) {
-        // Best available (lowest ADP) among nearby undrafted players
         const best = nearby.filter(p => !_isPlayerDrafted(p.name))[0] || nearby[0];
         sum += (total - best.adp);
       } else {
-        // Fallback: use the raw pick position
         sum += (total - overall);
       }
     });
@@ -297,10 +277,10 @@ const TradeAnalyzer = (() => {
     });
   }
 
-  // ─── Player DB helpers ───
+  // ─── Player DB helpers — reads from Players._db ───
   function _playersNearADP(overall, window) {
-    if (!State.players || State.players.length === 0) return [];
-    return State.players
+    if (!Players.isLoaded() || Players._db.length === 0) return [];
+    return Players._db
       .filter(p => {
         const adp = parseFloat(p.adp);
         return !isNaN(adp) && Math.abs(adp - overall) <= window;
