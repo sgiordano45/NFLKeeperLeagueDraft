@@ -8,6 +8,18 @@ const TradeAnalyzer = (() => {
 
   const ADP_WINDOW = 3; // ±3 picks around each pick's overall number
 
+  // ─── Fantasy Pick Value Curve ───
+  // Exponential decay tuned for fantasy redraft (12-team, 14-round).
+  // value(n) = 1000 × 0.965^(n-1)
+  // Pick 1 ≈ 1000, Pick 12 ≈ 644, Pick 24 ≈ 415, Pick 84 ≈ 53, Pick 168 ≈ 3
+  // This gives early picks disproportionately more value, like real draft boards.
+  const CURVE_BASE = 1000;
+  const CURVE_DECAY = 0.965;
+
+  function _pickValue(overall) {
+    return CURVE_BASE * Math.pow(CURVE_DECAY, overall - 1);
+  }
+
   // ─── Public API ───
   function open() {
     _render();
@@ -51,10 +63,22 @@ const TradeAnalyzer = (() => {
           <button class="modal-close" onclick="TradeAnalyzer.close()">×</button>
         </div>
 
-        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">
+        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:12px">
           Enter overall pick numbers for each side. Players with ADP within
           ±${ADP_WINDOW} of each pick will appear.
         </p>
+
+        <details class="ta-chart-details">
+          <summary class="ta-chart-summary">📊 Pick Value Reference Chart</summary>
+          <div class="ta-chart-body">
+            <p class="ta-chart-note">
+              Point values use an exponential decay curve (1000 × 0.965<sup>n−1</sup>),
+              similar to the fantasy-tuned model used by KeepTradeCut and Footballguys.
+              Early picks are worth disproportionately more — just like the real thing.
+            </p>
+            ${_valueChartHTML()}
+          </div>
+        </details>
 
         <div class="ta-sides">
           <div class="ta-side">
@@ -215,21 +239,42 @@ const TradeAnalyzer = (() => {
 
   // ─── Value summary ───
   function _valueSummary(aValue, bValue, sideA, sideB, playersLoaded) {
-    const diff = aValue - bValue;
+    // Always compute curve-based totals for the raw slot values (no ADP needed)
+    const aCurveTotal = sideA.reduce((s, o) => s + _pickValue(o), 0);
+    const bCurveTotal = sideB.reduce((s, o) => s + _pickValue(o), 0);
+    const curveDiff = aCurveTotal - bCurveTotal;
+    const maxTotal = Math.max(aCurveTotal, bCurveTotal);
+    const pctDiff = maxTotal > 0 ? Math.abs(curveDiff) / maxTotal * 100 : 0;
+
     let verdict = "";
     let verdictColor = "var(--text-secondary)";
 
-    if (!playersLoaded) {
-      verdict = "Load a player database to see value estimates.";
-    } else if (Math.abs(diff) < 5) {
+    if (pctDiff < 3) {
       verdict = "Roughly even trade.";
       verdictColor = "var(--success)";
-    } else if (diff > 0) {
-      verdict = `Side A is giving more value (~${Math.round(diff)} ADP pts). B wins this trade.`;
+    } else if (curveDiff > 0) {
+      verdict = `Side A is giving more value. B wins by ~${pctDiff.toFixed(0)}%.`;
       verdictColor = "#64B5F6";
     } else {
-      verdict = `Side B is giving more value (~${Math.round(Math.abs(diff))} ADP pts). A wins this trade.`;
+      verdict = `Side B is giving more value. A wins by ~${pctDiff.toFixed(0)}%.`;
       verdictColor = "var(--gold)";
+    }
+
+    // ADP-adjusted verdict (only if players loaded)
+    let adpBlock = "";
+    if (playersLoaded) {
+      const diff = aValue - bValue;
+      const adjMax = Math.max(aValue, bValue);
+      const adjPct = adjMax > 0 ? Math.abs(diff) / adjMax * 100 : 0;
+      let adpVerdict = "";
+      if (adjPct < 3) {
+        adpVerdict = "ADP-adjusted: roughly even.";
+      } else if (diff > 0) {
+        adpVerdict = `ADP-adjusted: B wins by ~${adjPct.toFixed(0)}%.`;
+      } else {
+        adpVerdict = `ADP-adjusted: A wins by ~${adjPct.toFixed(0)}%.`;
+      }
+      adpBlock = `<div class="ta-verdict-sub">${adpVerdict} (blends curve + best available ADP)</div>`;
     }
 
     let countNote = "";
@@ -239,24 +284,42 @@ const TradeAnalyzer = (() => {
 
     return `
       <div class="ta-verdict">
-        <div class="ta-verdict-label">Trade Value</div>
+        <div class="ta-verdict-scores">
+          <div class="ta-verdict-score ta-score-a">
+            <div class="ta-score-label" style="color:var(--gold)">Side A</div>
+            <div class="ta-score-pts">${Math.round(aCurveTotal)}</div>
+            <div class="ta-score-unit">pts</div>
+          </div>
+          <div class="ta-verdict-label">Pick Value</div>
+          <div class="ta-verdict-score ta-score-b">
+            <div class="ta-score-label" style="color:#64B5F6">Side B</div>
+            <div class="ta-score-pts">${Math.round(bCurveTotal)}</div>
+            <div class="ta-score-unit">pts</div>
+          </div>
+        </div>
         <div class="ta-verdict-text" style="color:${verdictColor}">${verdict}</div>
+        ${adpBlock}
         ${countNote}
-        ${playersLoaded ? `<div class="ta-verdict-sub">Based on best available ADP near each pick. Lower ADP = better value.</div>` : ""}
+        <div class="ta-verdict-footnote">Curve: 1000 × 0.965<sup>n−1</sup> per pick slot. ${playersLoaded ? "ADP adjustment uses best available player near each slot." : "Load a player CSV for ADP-adjusted analysis."}</div>
       </div>
     `;
   }
 
   function _sideValue(overalls) {
-    const total = CONFIG.NUM_TEAMS * CONFIG.NUM_ROUNDS;
+    // Use the pick value curve for the base value of each slot.
+    // If ADP data is loaded, adjust slightly toward the best available
+    // player's ADP (reflects real draft-day value better than raw slot).
     let sum = 0;
     overalls.forEach(overall => {
       const nearby = _playersNearADP(overall, ADP_WINDOW);
       if (nearby.length > 0) {
         const best = nearby.filter(p => !_isPlayerDrafted(p.name))[0] || nearby[0];
-        sum += (total - best.adp);
+        // Blend: 70% curve value of best player's ADP, 30% raw slot value
+        const curveAtBest = _pickValue(Math.round(best.adp));
+        const curveAtSlot = _pickValue(overall);
+        sum += 0.7 * curveAtBest + 0.3 * curveAtSlot;
       } else {
-        sum += (total - overall);
+        sum += _pickValue(overall);
       }
     });
     return sum;
@@ -286,6 +349,50 @@ const TradeAnalyzer = (() => {
         return !isNaN(adp) && Math.abs(adp - overall) <= window;
       })
       .sort((a, b) => parseFloat(a.adp) - parseFloat(b.adp));
+  }
+
+  // ─── Pick value reference chart HTML ───
+  function _valueChartHTML() {
+    const total = CONFIG.NUM_TEAMS * CONFIG.NUM_ROUNDS;
+    // Build one column per round, showing pick slot and value for pick 1 in each round
+    // Table: rows = picks 1–12 within round, cols = rounds 1–14
+    const NUM_ROUNDS = CONFIG.NUM_ROUNDS;
+    const NUM_TEAMS = CONFIG.NUM_TEAMS;
+
+    let html = `<div class="ta-chart-scroll"><table class="ta-chart-table">`;
+    html += `<thead><tr><th>Pick</th>`;
+    for (let r = 1; r <= NUM_ROUNDS; r++) {
+      html += `<th>Rd ${r}</th>`;
+    }
+    html += `</tr></thead><tbody>`;
+
+    for (let p = 1; p <= NUM_TEAMS; p++) {
+      html += `<tr><td class="ta-chart-pick-label">${p}</td>`;
+      for (let r = 1; r <= NUM_ROUNDS; r++) {
+        const overall = (r - 1) * NUM_TEAMS + p;
+        if (overall > total) {
+          html += `<td>—</td>`;
+        } else {
+          const val = _pickValue(overall);
+          // Color intensity: green → yellow → red as value drops
+          const pct = val / CURVE_BASE; // 0..1
+          const alpha = 0.15 + pct * 0.55;
+          const bg = pct > 0.6
+            ? `rgba(42,157,143,${alpha})`   // green (high value)
+            : pct > 0.3
+            ? `rgba(233,196,106,${alpha})`  // yellow (mid)
+            : `rgba(230,57,70,${alpha})`;   // red (low)
+          html += `<td style="background:${bg};font-weight:${r === 1 ? 700 : 400}">
+            <div class="ta-chart-overall">#${overall}</div>
+            <div class="ta-chart-val">${Math.round(val)}</div>
+          </td>`;
+        }
+      }
+      html += `</tr>`;
+    }
+
+    html += `</tbody></table></div>`;
+    return html;
   }
 
   function _showError(msg) {
