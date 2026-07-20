@@ -315,9 +315,11 @@ header {
   padding: 2px 7px;
   border-radius: 3px;
   white-space: nowrap;
-  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-block;
+  align-self: center;
+  max-width: 90%;
 }
 
 /* ─── POSITION TAG ─── */
