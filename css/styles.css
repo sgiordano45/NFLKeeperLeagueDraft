@@ -304,6 +304,22 @@ header {
   color: rgba(255,255,255,.1);
 }
 
+/* ─── TRADE BADGE (empty traded pick) ─── */
+.trade-badge {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ─── POSITION TAG ─── */
 .pick-pos-tag {
   font-family: var(--font-display);
