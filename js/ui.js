@@ -86,7 +86,7 @@ const UI = {
       const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
       const extraClass = State.draftStarted ? " team-col-clickable" : "";
       const extraAttrs = State.draftStarted
-        ? `onclick="Modals.openTeamRoster(${JSON.stringify(team)})" title="View ${this.esc(team)} roster"`
+        ? `onclick="Modals.openTeamRoster(this.dataset.team)" data-team="${this.esc(team)}" title="View ${this.esc(team)} roster"`
         : "";
       headHTML += `<th class="team-col-header${extraClass}" style="color:${color};border-top:3px solid ${color}" ${extraAttrs}>${this.esc(team)}</th>`;
     });
