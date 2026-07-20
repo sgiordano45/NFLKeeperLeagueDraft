@@ -119,8 +119,9 @@ const UI = {
         const parsed = filled ? CONFIG.parsePlayer(pick.player) : null;
 
         if (filled) {
-          // Always use team color for filled picks
-          const teamColor = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
+          // Use currentOwner's color (traded picks should reflect who owns the pick now)
+          const ownerIdx = State.teams.indexOf(pick.currentOwner);
+          const teamColor = CONFIG.TEAM_COLORS[(ownerIdx !== -1 ? ownerIdx : tIdx) % CONFIG.TEAM_COLORS.length];
           bg = isKeeper
             ? `linear-gradient(135deg, ${teamColor}cc, ${teamColor}88)`
             : `${teamColor}bb`;
