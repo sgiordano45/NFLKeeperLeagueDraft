@@ -1148,6 +1148,97 @@ const Modals = {
     }
   },
 
+  // ─── TEAM ROSTER VIEWER ───
+  // Clicking any team column header during (or after) the draft opens this.
+  openTeamRoster(teamName) {
+    const color = State.teamColor(teamName);
+    const ownerName = Auth.getTeamOwnerName(teamName);
+
+    const myPicks = State.picks.filter(p => p.currentOwner === teamName);
+    const filledPicks = myPicks.filter(p => p.player);
+    const remainingPicks = myPicks.filter(p => !p.player);
+
+    // ── Categorize by position ──
+    const positions = ["QB", "RB", "WR", "TE"];
+    const roster = {};
+    const uncategorized = [];
+    positions.forEach(pos => roster[pos] = []);
+
+    filledPicks.forEach(p => {
+      const pos = this._detectPos(p.player);
+      if (pos && roster[pos]) {
+        roster[pos].push(p);
+      } else {
+        uncategorized.push(p);
+      }
+    });
+
+    // ── Roster by position ──
+    let rosterHTML = "";
+    positions.forEach(pos => {
+      const players = roster[pos];
+      rosterHTML += `<div class="tr-pos-group">
+        <div class="tr-pos-header">
+          <span class="tr-pos-label">${pos}</span>
+          <span class="tr-pos-count">${players.length}</span>
+        </div>`;
+      if (players.length === 0) {
+        rosterHTML += `<div class="tr-empty">—</div>`;
+      } else {
+        players.forEach(p => {
+          const name = this._cleanPlayerName(p.player);
+          const info = this._getPlayerDB(p.player);
+          const metaParts = [`Rd ${p.round}`];
+          if (p.isKeeper) metaParts.push("K");
+          if (info && info.team) metaParts.push(info.team);
+          if (info && info.bye) metaParts.push(`Bye ${info.bye}`);
+          rosterHTML += `<div class="tr-player">
+            <span class="tr-player-name">${UI.esc(name)}</span>
+            <span class="tr-player-meta">${metaParts.join(" · ")}${info && info.projPts ? ` · <strong>${info.projPts.toFixed(1)}pts</strong>` : ""}</span>
+          </div>`;
+        });
+      }
+      rosterHTML += `</div>`;
+    });
+
+    if (uncategorized.length > 0) {
+      rosterHTML += `<div class="tr-pos-group">
+        <div class="tr-pos-header"><span class="tr-pos-label">Other</span><span class="tr-pos-count">${uncategorized.length}</span></div>`;
+      uncategorized.forEach(p => {
+        const info = this._getPlayerDB(p.player);
+        rosterHTML += `<div class="tr-player">
+          <span class="tr-player-name">${UI.esc(p.player)}</span>
+          <span class="tr-player-meta">Rd ${p.round}${info && info.team ? " · " + info.team : ""}${info && info.bye ? " · Bye " + info.bye : ""}</span>
+        </div>`;
+      });
+      rosterHTML += `</div>`;
+    }
+
+    // ── Remaining picks ──
+    let remainHTML = "";
+    if (remainingPicks.length > 0) {
+      remainHTML = `<div class="tr-section-title" style="margin-top:16px">Remaining Picks <span style="color:var(--text-muted);font-weight:400">(${remainingPicks.length})</span></div>`;
+      remainHTML += `<div class="tr-remaining-grid">`;
+      remainingPicks.forEach(p => {
+        const traded = p.originalOwner !== p.currentOwner;
+        remainHTML += `<div class="tr-pick-chip">
+          Rd ${p.round} · #${p.overall}${traded ? ` <span class="tr-via">via ${UI.esc(p.originalOwner)}</span>` : ""}
+        </div>`;
+      });
+      remainHTML += `</div>`;
+    }
+
+    this.open(`${teamName}`, `
+      <div class="tr-team-header" style="border-left:4px solid ${color};padding-left:12px;margin-bottom:16px">
+        <div style="font-family:var(--font-display);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)">
+          ${filledPicks.length} player${filledPicks.length !== 1 ? "s" : ""} drafted${ownerName ? ` · ${UI.esc(ownerName)}` : ""}
+        </div>
+      </div>
+      <div class="tr-roster">${rosterHTML}</div>
+      ${remainHTML}
+    `);
+  },
+
   // Helpers for team summary (avoid dependency on TeamPanel)
   _detectPos(playerStr) {
     if (!playerStr) return null;

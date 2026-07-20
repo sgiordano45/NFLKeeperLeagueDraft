@@ -84,7 +84,8 @@ const UI = {
     let headHTML = `<tr><th class="round-header">Rd</th>`;
     State.teams.forEach((team, tIdx) => {
       const color = CONFIG.TEAM_COLORS[tIdx % CONFIG.TEAM_COLORS.length];
-      headHTML += `<th class="team-col-header" style="color:${color};border-top:3px solid ${color}">${this.esc(team)}</th>`;
+      const clickable = State.draftStarted ? `onclick="Modals.openTeamRoster('${this.esc(team)}')" style="color:${color};border-top:3px solid ${color};cursor:pointer" title="View ${this.esc(team)} roster"` : `style="color:${color};border-top:3px solid ${color}"`;
+      headHTML += `<th class="team-col-header${State.draftStarted ? ' team-col-clickable' : ''}" ${clickable}>${this.esc(team)}</th>`;
     });
     headHTML += `</tr>`;
     thead.innerHTML = headHTML;
