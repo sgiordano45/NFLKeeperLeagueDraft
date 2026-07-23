@@ -1041,6 +1041,11 @@ const Modals = {
       ? `✓ All ${CONFIG.NUM_TEAMS} teams have exactly ${expected} picks. Total: ${totalActual}/${totalExpected}.`
       : `✗ Pick distribution has issues. Total picks: ${totalActual} (expected ${totalExpected}).`;
 
+    const livePicks = State.picks.filter(p => p.player && !p.isKeeper).length;
+    const exportStatusHTML = State.draftComplete
+      ? '<strong style="color:var(--success)">✓ Draft is complete — export recommended!</strong>'
+      : '<span style="color:var(--gold)">' + livePicks + ' live picks made so far.</span>';
+
     this.open("Admin Panel", `
       <div class="admin-alert ${summaryClass}" style="margin-bottom:16px">${summaryMsg}</div>
       ${orphanHTML}
@@ -1068,10 +1073,7 @@ const Modals = {
       <p style="font-size:12px;color:var(--text-muted);margin:4px 0 10px">
         Download a backup of all picks, rosters, and trade history. JSON is fully reimportable;
         CSV is human-readable for sharing or archiving.
-        ${State.draftComplete
-          ? '<strong style="color:var(--success)">✓ Draft is complete — export recommended!</strong>'
-          : `<span style="color:var(--gold)">${State.picks.filter(p => p.player && !p.isKeeper).length} live picks made so far.</span>`
-        }
+        ${exportStatusHTML}
       </p>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-success" onclick="Modals.close();DraftExport.exportJSON()">⬇ Download JSON</button>

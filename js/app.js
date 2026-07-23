@@ -23,7 +23,7 @@ const App = {
     // Subscribe to state changes → re-render UI, then check for draft-complete prompt
     State.onChange(() => {
       UI.render();
-      DraftExport.maybePrompt();
+      if (typeof Modals !== "undefined") DraftExport.maybePrompt();
     });
 
     // Initialize Firebase sync
