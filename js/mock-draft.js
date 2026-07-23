@@ -25,7 +25,7 @@ const MockDraft = (() => {
   // ─── Public API ───
 
   function open() {
-    if (!Auth.user) {
+    if (!Auth.currentUser) {
       alert("You must be signed in to use Mock Draft.");
       return;
     }
@@ -72,13 +72,13 @@ const MockDraft = (() => {
   }
 
   function _buildInitialState() {
-    const geoTeam = Auth.claimedTeam || null;
+    const geoTeam = Auth.myTeam || null;
 
     // Clone real pick order — clear non-keeper players, normalize keeper objects
     const picks = State.picks.map(p => ({
       overall:       p.overall,
       round:         p.round,
-      pick:          p.pick,
+      pick:          p.pickInRound,
       originalOwner: p.originalOwner,
       currentOwner:  p.currentOwner,
       isKeeper:      !!p.isKeeper,
@@ -296,8 +296,8 @@ const MockDraft = (() => {
       statusEl.className   = "mock-status mock-status--complete";
     } else if (currentPick) {
       statusEl.textContent = isMyTurn
-        ? `Round ${currentPick.round}, Pick ${currentPick.pick} — YOUR PICK`
-        : `Round ${currentPick.round}, Pick ${currentPick.pick} — ${currentPick.currentOwner} is picking…`;
+        ? `Round ${currentPick.round}, Pick ${currentPick.pickInRound} — YOUR PICK`
+        : `Round ${currentPick.round}, Pick ${currentPick.pickInRound} — ${currentPick.currentOwner} is picking…`;
       statusEl.className = `mock-status ${isMyTurn ? "mock-status--your-pick" : "mock-status--cpu"}`;
     }
     if (inputEl) inputEl.disabled = !isMyTurn;
