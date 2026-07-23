@@ -5,11 +5,10 @@ const MockDraft = (() => {
 
   // ─── Constants ───
   const TOTAL_ROUNDS = 14;
-  const TOTAL_PICKS  = TOTAL_ROUNDS * 12; // 12 teams
+  const TOTAL_PICKS  = TOTAL_ROUNDS * 12;
 
-  // Position weight tables
-  const QB_W = { have0: 0.9, have1: 0.3, have2: 0.0, afterR12: 0.5, default: 0.6 };
-  const TE_W = { have0: 0.9, have1: 0.4, have2: 0.0, afterR12: 0.5, default: 0.7 };
+  const QB_W = { have0: 0.9, have1: 0.3, afterR12: 0.5 };
+  const TE_W = { have0: 0.9, have1: 0.4, afterR12: 0.5 };
   const RB_W = { default: 1.0, rbLag: 1.3 };
   const WR_W = { default: 1.0 };
 
@@ -25,7 +24,7 @@ const MockDraft = (() => {
   // ─── Public API ───
 
   function open() {
-    if (!Auth.currentUser) {
+    if (!Auth.user) {
       alert("You must be signed in to use Mock Draft.");
       return;
     }
@@ -48,22 +47,19 @@ const MockDraft = (() => {
   }
 
   function reset() {
-    if (!mock && !Players.isLoaded()) return;
+    if (!Players.isLoaded()) return;
     _buildInitialState();
     _renderShell();
     _renderBoard();
     _advanceCPU();
   }
 
-  // ─── State Builder ───
-
+  // ─── Keeper player resolver ───
   // Keeper players may be stored as a string ("Name, POS") or a full object.
-  // Always return a normalized object { name, pos, team, bye, adp } or null.
   function _resolvePlayer(raw) {
     if (!raw) return null;
     if (typeof raw === "object") return raw;
     if (typeof raw === "string") {
-      // Format: "Patrick Mahomes, QB" or just "Patrick Mahomes"
       const match = raw.match(/^(.+?),\s*([A-Z]+)$/);
       if (match) return { name: match[1].trim(), pos: match[2].trim() };
       return { name: raw.trim(), pos: "" };
@@ -71,21 +67,23 @@ const MockDraft = (() => {
     return null;
   }
 
-  function _buildInitialState() {
-    const geoTeam = Auth.myTeam || null;
+  // ─── State Builder ───
 
-    // Clone real pick order — clear non-keeper players, normalize keeper objects
+  function _buildInitialState() {
+    const geoTeam = Auth.claimedTeam || null;
+
+    // Clone real pick order — normalize keeper players, clear non-keeper players
     const picks = State.picks.map(p => ({
       overall:       p.overall,
       round:         p.round,
-      pick:          p.pickInRound,
+      pickInRound:   p.pickInRound,
       originalOwner: p.originalOwner,
       currentOwner:  p.currentOwner,
       isKeeper:      !!p.isKeeper,
       player:        (p.isKeeper && p.player) ? _resolvePlayer(p.player) : null,
     }));
 
-    // Keeper name exclusion set
+    // Build keeper name exclusion set
     const keeperNames = new Set(
       picks
         .filter(p => p.isKeeper && p.player)
@@ -93,18 +91,19 @@ const MockDraft = (() => {
         .filter(Boolean)
     );
 
-    // Available pool — Players._db is ADP-sorted
+    // Available pool — ADP-sorted, keepers removed
     const available = Players.getAll()
       .filter(p => p.name && !keeperNames.has(p.name.toUpperCase()))
       .sort((a, b) => (parseFloat(a.adp) || 999) - (parseFloat(b.adp) || 999));
 
-    // Per-team rosters pre-populated with keepers
+    // Per-team rosters, pre-populated with keepers
     const teams = [...new Set(picks.map(p => p.currentOwner))];
     const rosters = Object.fromEntries(teams.map(t => [t, []]));
     picks
       .filter(p => p.isKeeper && p.player)
       .forEach(p => { if (rosters[p.currentOwner]) rosters[p.currentOwner].push(p.player); });
 
+    // First open (non-keeper) pick
     const firstOpen = picks.findIndex(p => !p.player);
 
     mock = {
@@ -114,6 +113,7 @@ const MockDraft = (() => {
       geoTeam,
       currentPickIndex: firstOpen === -1 ? TOTAL_PICKS : firstOpen,
       complete: firstOpen === -1,
+      posFilter: null, // null = All positions
     };
   }
 
@@ -122,14 +122,27 @@ const MockDraft = (() => {
   function _advanceCPU() {
     if (!mock || mock.complete) return;
 
+    // Skip past any already-filled slots (keepers or previously filled)
+    while (mock.currentPickIndex < TOTAL_PICKS && mock.picks[mock.currentPickIndex]?.player) {
+      mock.currentPickIndex++;
+    }
+
+    if (mock.currentPickIndex >= TOTAL_PICKS) {
+      mock.complete = true;
+      _renderBoard();
+      return;
+    }
+
     const pick = mock.picks[mock.currentPickIndex];
     if (!pick) { mock.complete = true; _renderBoard(); return; }
 
+    // Geo's turn — wait for user input
     if (pick.currentOwner === mock.geoTeam) {
       _renderBoard();
       return;
     }
 
+    // CPU pick after short delay
     setTimeout(() => {
       if (!mock) return;
       _executeCPUPick(pick);
@@ -157,12 +170,11 @@ const MockDraft = (() => {
       if (counts[pos] !== undefined) counts[pos]++;
     });
 
-    // Build eligible pool: scan top ADP players, use weight as a probability gate.
-    // Weight is the chance a position is "in play" this pick — not a sort key.
-    // This means QB/TE at weight 0.9 will almost always make the pool when needed,
-    // and RB/WR at 1.0 always do — so the actual pick comes down to ADP order
-    // within the pool rather than position bias crushing everything.
-    const scanSize = pool * 8; // scan deeper ADP list to find diverse candidates
+    // Scan top ADP players and use weight as a probability gate.
+    // Each player passes/fails randomly based on their positional weight,
+    // so QB/TE near their ADP get picked naturally rather than always losing
+    // to RB/WR when sorted by weight.
+    const scanSize = pool * 8;
     const eligible = [];
 
     for (const player of mock.available) {
@@ -171,7 +183,7 @@ const MockDraft = (() => {
       let weight = 0;
 
       if (pos === "QB") {
-        if (!afterR12 && counts.QB >= 2) continue; // hard cap
+        if (!afterR12 && counts.QB >= 2) continue;
         if (counts.QB >= 3) continue;
         weight = afterR12        ? QB_W.afterR12
                : counts.QB === 0 ? QB_W.have0
@@ -189,10 +201,9 @@ const MockDraft = (() => {
       } else if (pos === "WR") {
         weight = WR_W.default;
       } else {
-        continue; // skip K, DEF
+        continue;
       }
 
-      // Probabilistic gate: roll against weight to include this player
       if (weight > 0 && Math.random() < weight) {
         eligible.push(player);
       }
@@ -200,15 +211,12 @@ const MockDraft = (() => {
 
     let chosen = null;
     if (eligible.length > 0) {
-      // Pick randomly from the top `pool` eligible players (already ADP-ordered)
+      // Pick randomly from top `pool` eligible (already ADP-ordered)
       const candidates = eligible.slice(0, pool);
       chosen = candidates[Math.floor(Math.random() * candidates.length)];
     } else {
-      // Fallback: best available ignoring position weights (rare edge case)
-      chosen = mock.available.find(p => {
-        const pos = (p.pos || "").toUpperCase();
-        return ["QB","RB","WR","TE"].includes(pos);
-      }) || null;
+      // Fallback: best available skipping K/DEF
+      chosen = mock.available.find(p => ["QB","RB","WR","TE"].includes((p.pos || "").toUpperCase())) || null;
     }
 
     if (chosen) _assignPick(pick, chosen);
@@ -265,7 +273,13 @@ const MockDraft = (() => {
             <div id="mock-my-roster" class="mock-my-roster"></div>
             <div class="mock-panel-title mock-panel-title--ba">
               Best Available
-              <span class="mock-ba-hint">click to draft</span>
+              <div class="mock-pos-filters">
+                <button class="mock-pos-btn mock-pos-btn--active" data-pos="">All</button>
+                <button class="mock-pos-btn" data-pos="QB">QB</button>
+                <button class="mock-pos-btn" data-pos="RB">RB</button>
+                <button class="mock-pos-btn" data-pos="WR">WR</button>
+                <button class="mock-pos-btn" data-pos="TE">TE</button>
+              </div>
             </div>
             <div id="mock-best-available" class="mock-best-available"></div>
           </div>
@@ -296,7 +310,6 @@ const MockDraft = (() => {
     const statusEl = document.getElementById("mock-status");
     const logEl    = document.getElementById("mock-pick-log");
     const rosterEl = document.getElementById("mock-my-roster");
-    const bestEl   = document.getElementById("mock-best-available");
     const inputEl  = document.getElementById("mock-search-input");
     const draftBtn = document.getElementById("mock-draft-btn");
     if (!statusEl) return;
@@ -304,7 +317,7 @@ const MockDraft = (() => {
     const currentPick = mock.picks[mock.currentPickIndex];
     const isMyTurn    = !mock.complete && currentPick?.currentOwner === mock.geoTeam;
 
-    // Status
+    // Status bar
     if (mock.complete) {
       statusEl.textContent = "✓ Mock Draft Complete!";
       statusEl.className   = "mock-status mock-status--complete";
@@ -317,7 +330,7 @@ const MockDraft = (() => {
     if (inputEl) inputEl.disabled = !isMyTurn;
     if (draftBtn) draftBtn.disabled = !isMyTurn;
 
-    // Pick log
+    // Pick log grouped by round
     const rounds = {};
     mock.picks.forEach(p => {
       if (!rounds[p.round]) rounds[p.round] = [];
@@ -381,8 +394,24 @@ const MockDraft = (() => {
           </div>`).join("");
     }
 
-    // Best Available
-    bestEl.innerHTML = mock.available.slice(0, 12).map((p, i) => {
+    _renderBestAvailable();
+    _renderAutocomplete();
+  }
+
+  // ─── Best Available (separate so filter buttons can call it independently) ───
+
+  function _renderBestAvailable() {
+    const bestEl = document.getElementById("mock-best-available");
+    if (!bestEl || !mock) return;
+
+    const currentPick = mock.picks[mock.currentPickIndex];
+    const isMyTurn    = !mock.complete && currentPick?.currentOwner === mock.geoTeam;
+
+    const filtered = mock.posFilter
+      ? mock.available.filter(p => (p.pos || "").toUpperCase() === mock.posFilter)
+      : mock.available;
+
+    bestEl.innerHTML = filtered.slice(0, 15).map((p, i) => {
       const pos = (p.pos || "").toUpperCase();
       return `
         <div class="mock-ba-row${isMyTurn ? " mock-ba-row--active" : ""}" data-name="${p.name}">
@@ -398,16 +427,14 @@ const MockDraft = (() => {
         row.addEventListener("click", () => draftPlayer(row.dataset.name));
       });
     }
-
-    _renderAutocomplete();
   }
 
   // ─── Event Listeners ───
 
   function _attachEventListeners() {
-    const input  = document.getElementById("mock-search-input");
-    const btn    = document.getElementById("mock-draft-btn");
-    const acEl   = document.getElementById("mock-autocomplete");
+    const input = document.getElementById("mock-search-input");
+    const btn   = document.getElementById("mock-draft-btn");
+    const acEl  = document.getElementById("mock-autocomplete");
 
     input.addEventListener("input", _renderAutocomplete);
 
@@ -431,6 +458,16 @@ const MockDraft = (() => {
       acEl.classList.add("hidden");
     });
 
+    // Position filter buttons
+    document.querySelectorAll(".mock-pos-btn").forEach(b => {
+      b.addEventListener("click", () => {
+        mock.posFilter = b.dataset.pos || null;
+        document.querySelectorAll(".mock-pos-btn").forEach(x => x.classList.remove("mock-pos-btn--active"));
+        b.classList.add("mock-pos-btn--active");
+        _renderBestAvailable();
+      });
+    });
+
     // Close autocomplete on outside click
     document.addEventListener("click", e => {
       if (!e.target.closest(".mock-search-wrap")) {
@@ -438,6 +475,8 @@ const MockDraft = (() => {
       }
     });
   }
+
+  // ─── Autocomplete ───
 
   function _renderAutocomplete() {
     const input = document.getElementById("mock-search-input");
