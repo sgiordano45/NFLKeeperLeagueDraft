@@ -2383,3 +2383,36 @@ body.lm-shake {
 .mock-ac-item:last-child  { border-bottom: none; }
 .mock-ac-name             { flex: 1; color: var(--text-primary); }
 .mock-ac-nfl              { font-size: 11px; color: var(--text-muted); }
+
+/* ─── Mock Draft: Position Filter Buttons ─── */
+.mock-pos-filters {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.mock-pos-btn {
+  padding: 2px 8px;
+  font-size: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+
+.mock-pos-btn:hover {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+}
+
+.mock-pos-btn--active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000;
+}
