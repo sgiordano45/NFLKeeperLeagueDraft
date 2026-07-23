@@ -20,8 +20,11 @@ const App = {
     // Initialize state with defaults
     State.init();
 
-    // Subscribe to state changes → re-render UI
-    State.onChange(() => UI.render());
+    // Subscribe to state changes → re-render UI, then check for draft-complete prompt
+    State.onChange(() => {
+      UI.render();
+      DraftExport.maybePrompt();
+    });
 
     // Initialize Firebase sync
     FirebaseSync.init();
@@ -165,6 +168,9 @@ const App = {
       draftComplete: false,
       timerData: Object.fromEntries(State.teams.map(t => [t, 0])),
     });
+
+    // Allow the export prompt to fire again if draft is re-run
+    DraftExport.resetPrompt();
   },
 };
 

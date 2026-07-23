@@ -1064,6 +1064,20 @@ const Modals = {
         <button class="btn" onclick="Modals.close();Modals.openManageClaims()">Manage Owners</button>
       </div>
 
+      <div class="admin-section-title" style="margin-top:20px">Export Draft Results 📥</div>
+      <p style="font-size:12px;color:var(--text-muted);margin:4px 0 10px">
+        Download a backup of all picks, rosters, and trade history. JSON is fully reimportable;
+        CSV is human-readable for sharing or archiving.
+        ${State.draftComplete
+          ? '<strong style="color:var(--success)">✓ Draft is complete — export recommended!</strong>'
+          : `<span style="color:var(--gold)">${State.picks.filter(p => p.player && !p.isKeeper).length} live picks made so far.</span>`
+        }
+      </p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-success" onclick="Modals.close();DraftExport.exportJSON()">⬇ Download JSON</button>
+        <button class="btn btn-success" onclick="Modals.close();DraftExport.exportCSV()">⬇ Download CSV</button>
+      </div>
+
       <div class="admin-section-title" style="margin-top:20px">Landmines 💣</div>
       <p style="font-size:12px;color:var(--text-muted);margin:4px 0 10px">
         Clears the 10 secret mines from Firebase. New ones generate on the next Start Draft.
@@ -1273,6 +1287,43 @@ const Modals = {
   _getPlayerDB(playerStr) {
     const clean = this._cleanPlayerName(playerStr);
     return Players.get(clean) || Players.get(playerStr) || null;
+  },
+
+  // ─── EXPORT PROMPT (auto-shown on draft complete) ───
+  openExportPrompt() {
+    const draftedCount = State.picks.filter(p => p.player && !p.isKeeper).length;
+    const keeperCount  = State.picks.filter(p => p.isKeeper).length;
+    const tradeCount   = State.picks.filter(p => p.originalOwner !== p.currentOwner).length;
+
+    this.open("🏆 Draft Complete — Export Results", `
+      <div style="text-align:center;padding:8px 0 20px">
+        <div style="font-size:40px;margin-bottom:8px">🏆</div>
+        <p style="font-size:15px;color:var(--text-primary);margin-bottom:4px">
+          <strong>${CONFIG.DRAFT_YEAR} Stamper League Draft is in the books!</strong>
+        </p>
+        <p style="font-size:13px;color:var(--text-secondary)">
+          ${draftedCount} picks · ${keeperCount} keepers · ${tradeCount} traded pick${tradeCount !== 1 ? "s" : ""}
+        </p>
+      </div>
+
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;text-align:center">
+        Download a backup before making any changes. The JSON can restore results if something
+        goes wrong; the CSV is easy to share with the league.
+      </p>
+
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <button class="btn btn-success btn-full" style="flex:1" onclick="DraftExport.exportJSON();document.getElementById('export-prompt-status').textContent='✓ JSON downloaded!'">
+          ⬇ Download JSON
+        </button>
+        <button class="btn btn-success btn-full" style="flex:1" onclick="DraftExport.exportCSV();document.getElementById('export-prompt-status').textContent='✓ CSV downloaded!'">
+          ⬇ Download CSV
+        </button>
+      </div>
+      <p id="export-prompt-status" style="text-align:center;font-size:13px;color:var(--success);min-height:18px"></p>
+
+      <button class="btn btn-full" style="margin-top:4px;background:transparent;color:var(--text-muted);font-size:12px"
+        onclick="Modals.close()">Dismiss — I'll export later from the Admin Panel</button>
+    `);
   },
 
   // ─── RESET LANDMINES ───
