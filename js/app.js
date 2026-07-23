@@ -146,6 +146,9 @@ const App = {
 
     Timer.stop();
 
+    // Clear landmines so they regenerate fresh on next Start Draft
+    Landmines.clear();
+
     // Only clear player values — preserve currentOwner, originalOwner, isKeeper, trades
     const clearedPicks = State.picks.map(p => ({
       ...p,

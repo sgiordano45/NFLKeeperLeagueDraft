@@ -1063,7 +1063,15 @@ const Modals = {
         <button class="btn" onclick="Modals.close();Modals.openPreassignEmails()">Pre-assign Emails</button>
         <button class="btn" onclick="Modals.close();Modals.openManageClaims()">Manage Owners</button>
       </div>
-    `);
+
+      <div class="admin-section-title" style="margin-top:20px">Landmines 💣</div>
+      <p style="font-size:12px;color:var(--text-muted);margin:4px 0 10px">
+        Clears the 10 secret mines from Firebase. New ones generate on the next Start Draft.
+        Use this when testing or to get a fresh set before the real draft.
+      </p>
+      <button class="btn btn-danger btn-sm" onclick="Modals.resetLandmines()">Reset Landmines</button>
+      <span id="landmine-reset-status" style="font-size:12px;margin-left:10px"></span>
+    \`);
   },
 
   // ─── PRE-ASSIGN TEAMS TO EMAILS ───
@@ -1265,6 +1273,17 @@ const Modals = {
   _getPlayerDB(playerStr) {
     const clean = this._cleanPlayerName(playerStr);
     return Players.get(clean) || Players.get(playerStr) || null;
+  },
+
+  // ─── RESET LANDMINES ───
+  async resetLandmines() {
+    const status = document.getElementById("landmine-reset-status");
+    if (status) status.textContent = "Clearing…";
+    await Landmines.clear();
+    if (status) {
+      status.textContent = "✓ Cleared! New mines will generate on next Start Draft.";
+      status.style.color = "var(--success)";
+    }
   },
 };
 
