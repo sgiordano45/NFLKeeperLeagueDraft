@@ -9,6 +9,10 @@
 //
 // Board overlay: flag emoji shown on pick cells, visible only to the flagging user.
 // Search overlay: flag badges injected into the draft autocomplete results.
+//
+// IMPORTANT: Player names are never embedded in onclick attribute strings.
+// Instead we use a _playerIndex registry so onclick uses a safe integer index,
+// avoiding breakage from apostrophes, quotes, or other special chars in names.
 
 const DraftAssistant = {
   // ─── State ───
@@ -19,6 +23,25 @@ const DraftAssistant = {
   _notes: {},           // { playerName: text }
   _loaded: false,
   _rankSort: "rank",    // "rank" | "name" | "pos" | "flag"
+
+  // Render-time player name index — maps integer → player name.
+  // Rebuilt each render so onclick handlers use _pi(n) instead of raw strings.
+  _playerIndex: [],
+
+  // Register a player name and return its index
+  _pi(name) {
+    let idx = this._playerIndex.indexOf(name);
+    if (idx === -1) {
+      idx = this._playerIndex.length;
+      this._playerIndex.push(name);
+    }
+    return idx;
+  },
+
+  // Retrieve player name from index (called from onclick)
+  _pn(idx) {
+    return this._playerIndex[idx] || null;
+  },
 
   // Flag config
   FLAGS: {
@@ -114,7 +137,6 @@ const DraftAssistant = {
     this._renderPanel();
     document.getElementById("da-panel").classList.add("is-open");
     document.getElementById("da-overlay").classList.remove("hidden");
-    // Refresh board overlay now that data is loaded
     this.renderBoardOverlay();
   },
 
@@ -128,6 +150,9 @@ const DraftAssistant = {
   _renderPanel() {
     const body = document.getElementById("da-body");
     if (!body) return;
+
+    // Reset player index at the start of each render
+    this._playerIndex = [];
 
     const tabs = [
       { id: "rankings", label: "📋 Rankings" },
@@ -147,27 +172,39 @@ const DraftAssistant = {
 
     // Best available suggestion strip
     const suggestion = this._getBestAvailable();
-    const suggHTML = suggestion ? `
-      <div class="da-suggestion">
-        <span class="da-suggestion-label">🎯 Best Available</span>
-        <span class="da-suggestion-name">${UI.esc(suggestion.name)}</span>
-        <span class="da-suggestion-meta">
-          ${suggestion.flagEmoji ? suggestion.flagEmoji + " " : ""}
-          ${suggestion.pos || ""}${suggestion.rank ? " · Rank #" + suggestion.rank : ""}
-        </span>
-        ${Auth.canDraftCurrentPick() ? `
-          <button class="btn btn-sm btn-gold" style="margin-left:auto"
-            onclick="DraftAssistant._draftPlayer('${UI.esc(suggestion.name)}', '${suggestion.pos || ''}')">
-            Draft
-          </button>` : ""}
-      </div>
-    ` : "";
+    const suggHTML = suggestion ? (() => {
+      const pi = this._pi(suggestion.name);
+      const draftBtn = Auth.canDraftCurrentPick()
+        ? `<button class="btn btn-sm btn-gold" style="margin-left:auto"
+             onclick="DraftAssistant._draftByIndex(${pi})">Draft</button>`
+        : "";
+      return `
+        <div class="da-suggestion">
+          <span class="da-suggestion-label">🎯 Best Available</span>
+          <span class="da-suggestion-name">${UI.esc(suggestion.name)}</span>
+          <span class="da-suggestion-meta">
+            ${suggestion.flagEmoji ? suggestion.flagEmoji + " " : ""}
+            ${suggestion.pos || ""}${suggestion.rank ? " · Rank #" + suggestion.rank : ""}
+          </span>
+          ${draftBtn}
+        </div>
+      `;
+    })() : "";
 
     body.innerHTML = `
       <div class="da-tabs">${tabHTML}</div>
       ${suggHTML}
       <div class="da-content">${contentHTML}</div>
     `;
+
+    // Wire up note textareas via event listeners (avoids any inline string issues)
+    body.querySelectorAll(".da-note-input[data-pi]").forEach(el => {
+      const pi = parseInt(el.dataset.pi);
+      el.addEventListener("blur", () => {
+        const name = this._pn(pi);
+        if (name !== null) this.saveNote(name, el.value);
+      });
+    });
   },
 
   _setTab(tab) {
@@ -178,39 +215,44 @@ const DraftAssistant = {
   // ─── Rankings tab ───
   _renderRankings() {
     const playerList = this._getSortedRankings();
-    const draftedPlayers = State.draftedPlayers().map(d => d.toUpperCase());
+    const drafted = this._getDraftedSet();
 
     const rowsHTML = playerList.length === 0
       ? `<div class="da-empty">No rankings yet. Upload a CSV or add players below.</div>`
       : playerList.map(p => {
-          const isDrafted = draftedPlayers.some(d => d === p.name.toUpperCase());
+          const isDrafted = drafted.has(p.name.toUpperCase());
+          // #2: skip drafted players entirely to reduce clutter
+          if (isDrafted) return "";
+
           const flag = this._flags[p.name];
-          const flagCfg = flag ? this.FLAGS[flag] : null;
           const note = this._notes[p.name];
           const dbInfo = Players.get(p.name);
           const pos = dbInfo ? dbInfo.pos : (p.pos || "");
+          const pi = this._pi(p.name);
+
+          const draftBtn = Auth.canDraftCurrentPick()
+            ? `<button class="btn btn-sm btn-gold da-draft-btn"
+                 onclick="DraftAssistant._draftByIndex(${pi})">Draft</button>`
+            : "";
 
           return `
-            <div class="da-rank-row ${isDrafted ? "da-drafted" : ""}">
+            <div class="da-rank-row">
               <span class="da-rank-num">${p.rank}</span>
               <span class="da-rank-name">
                 ${UI.esc(p.name)}
                 ${pos ? `<span class="da-rank-pos pos-${pos.toLowerCase()}">${pos}</span>` : ""}
-                ${isDrafted ? `<span class="da-drafted-tag">DRAFTED</span>` : ""}
               </span>
               <div class="da-rank-actions">
-                ${this._flagSelector(p.name, flag)}
-                ${!isDrafted && Auth.canDraftCurrentPick() ? `
-                  <button class="btn btn-sm btn-gold da-draft-btn"
-                    onclick="DraftAssistant._draftPlayer('${UI.esc(p.name)}', '${pos}')">
-                    Draft
-                  </button>` : ""}
-                <button class="da-remove-btn" onclick="DraftAssistant.removeRanking('${UI.esc(p.name)}')" title="Remove">&times;</button>
+                ${this._flagSelector(p.name, flag, pi)}
+                ${draftBtn}
+                <button class="da-remove-btn" onclick="DraftAssistant._removeByIndex(${pi})" title="Remove">&times;</button>
               </div>
               ${note ? `<div class="da-inline-note">${UI.esc(note)}</div>` : ""}
             </div>
           `;
         }).join("");
+
+    const isEmpty = rowsHTML.trim() === "";
 
     // Sort controls
     const sortOpts = [
@@ -245,7 +287,7 @@ const DraftAssistant = {
       <div class="da-sort-bar">${sortHTML}</div>
 
       <div class="da-rank-list">
-        ${rowsHTML}
+        ${isEmpty ? `<div class="da-empty">All ranked players have been drafted!</div>` : rowsHTML}
       </div>
     `;
   },
@@ -257,40 +299,39 @@ const DraftAssistant = {
       return `<div class="da-empty">No flagged players yet.<br>Flag players from the Rankings tab or directly during the draft.</div>`;
     }
 
-    const draftedPlayers = State.draftedPlayers().map(d => d.toUpperCase());
-
-    // Group by flag type
+    const drafted = this._getDraftedSet();
     const groups = Object.keys(this.FLAGS);
     let html = "";
 
     groups.forEach(flagKey => {
       const cfg = this.FLAGS[flagKey];
-      const players = flagged.filter(([, f]) => f === flagKey);
+      // #2: filter out drafted players
+      const players = flagged.filter(([name, f]) => f === flagKey && !drafted.has(name.toUpperCase()));
       if (players.length === 0) return;
 
       html += `<div class="da-flag-group">
         <div class="da-flag-group-header" style="color:${cfg.color}">${cfg.label} <span class="da-flag-count">${players.length}</span></div>`;
 
       players.forEach(([name]) => {
-        const isDrafted = draftedPlayers.some(d => d === name.toUpperCase());
         const dbInfo = Players.get(name);
         const pos = dbInfo ? dbInfo.pos : "";
         const rank = this._rankings[name];
+        const pi = this._pi(name);
 
-        html += `<div class="da-flag-row ${isDrafted ? "da-drafted" : ""}">
+        const draftBtn = Auth.canDraftCurrentPick()
+          ? `<button class="btn btn-sm btn-gold da-draft-btn"
+               onclick="DraftAssistant._draftByIndex(${pi})">Draft</button>`
+          : "";
+
+        html += `<div class="da-flag-row">
           <span class="da-flag-player-name">
             ${UI.esc(name)}
             ${pos ? `<span class="da-rank-pos pos-${pos.toLowerCase()}">${pos}</span>` : ""}
             ${rank ? `<span class="da-flag-rank">#${rank.rank}</span>` : ""}
-            ${isDrafted ? `<span class="da-drafted-tag">DRAFTED</span>` : ""}
           </span>
           <div class="da-rank-actions">
-            ${this._flagSelector(name, flagKey)}
-            ${!isDrafted && Auth.canDraftCurrentPick() ? `
-              <button class="btn btn-sm btn-gold da-draft-btn"
-                onclick="DraftAssistant._draftPlayer('${UI.esc(name)}', '${pos}')">
-                Draft
-              </button>` : ""}
+            ${this._flagSelector(name, flagKey, pi)}
+            ${draftBtn}
           </div>
         </div>`;
       });
@@ -298,34 +339,56 @@ const DraftAssistant = {
       html += `</div>`;
     });
 
+    if (!html) {
+      html = `<div class="da-empty">All flagged players have been drafted!</div>`;
+    }
+
     return html;
   },
 
   // ─── Notes tab ───
   _renderNotes() {
+    const drafted = this._getDraftedSet();
+
+    // Collect all players with notes or flags, sorted by rank then alpha
     const allPlayers = new Set([
       ...Object.keys(this._rankings),
       ...Object.keys(this._flags),
       ...Object.keys(this._notes),
     ]);
 
-    if (allPlayers.size === 0) {
-      return `<div class="da-empty">Add notes to players from the Rankings or Flags tabs.</div>`;
+    // #2: filter out drafted players
+    // #1: sort by rank (fallback to alpha for players without a rank)
+    const sorted = [...allPlayers]
+      .filter(name => !drafted.has(name.toUpperCase()))
+      .sort((a, b) => {
+        const ra = this._rankings[a]?.rank ?? 9999;
+        const rb = this._rankings[b]?.rank ?? 9999;
+        if (ra !== rb) return ra - rb;
+        return a.localeCompare(b);
+      });
+
+    if (sorted.length === 0) {
+      return `<div class="da-empty">No players to show notes for.<br>All have been drafted, or none added yet.</div>`;
     }
 
-    const rows = [...allPlayers].sort().map(name => {
+    const rows = sorted.map(name => {
       const note = this._notes[name] || "";
       const flag = this._flags[name];
       const flagEmoji = flag ? this.FLAGS[flag]?.emoji : "";
+      const rank = this._rankings[name]?.rank;
+      const pi = this._pi(name);
+
+      // Use data-pi attribute + event listener wired up in _renderPanel
       return `
         <div class="da-note-row">
           <div class="da-note-header">
             ${flagEmoji ? `<span>${flagEmoji}</span>` : ""}
             <span class="da-note-player">${UI.esc(name)}</span>
+            ${rank ? `<span class="da-flag-rank">#${rank}</span>` : ""}
           </div>
-          <textarea class="da-note-input" rows="2"
+          <textarea class="da-note-input" rows="2" data-pi="${pi}"
             placeholder="Add a note…"
-            onblur="DraftAssistant.saveNote('${UI.esc(name)}', this.value)"
           >${UI.esc(note)}</textarea>
         </div>
       `;
@@ -335,22 +398,47 @@ const DraftAssistant = {
   },
 
   // ─── Flag selector widget ───
-  _flagSelector(playerName, currentFlag) {
-    const safeKey = UI.esc(playerName);
+  // Uses integer index instead of player name in onclick to handle apostrophes safely
+  _flagSelector(playerName, currentFlag, pi) {
     const opts = Object.entries(this.FLAGS).map(([key, cfg]) => `
       <button class="da-flag-btn ${currentFlag === key ? "da-flag-active" : ""}"
         title="${cfg.label}"
-        onclick="DraftAssistant.setFlag('${safeKey}', '${key}')">
+        onclick="DraftAssistant._setFlagByIndex(${pi}, '${key}')">
         ${cfg.emoji}
       </button>
     `).join("");
 
     const clearBtn = currentFlag
       ? `<button class="da-flag-btn da-flag-clear" title="Clear flag"
-          onclick="DraftAssistant.clearFlag('${safeKey}')">✕</button>`
+          onclick="DraftAssistant._clearFlagByIndex(${pi})">✕</button>`
       : "";
 
     return `<div class="da-flag-selector">${opts}${clearBtn}</div>`;
+  },
+
+  // ─── Index-based public action wrappers (called from onclick) ───
+
+  _setFlagByIndex(pi, flag) {
+    const name = this._pn(pi);
+    if (name !== null) this.setFlag(name, flag);
+  },
+
+  _clearFlagByIndex(pi) {
+    const name = this._pn(pi);
+    if (name !== null) this.clearFlag(name);
+  },
+
+  _removeByIndex(pi) {
+    const name = this._pn(pi);
+    if (name !== null) this.removeRanking(name);
+  },
+
+  _draftByIndex(pi) {
+    const name = this._pn(pi);
+    if (name === null) return;
+    const dbInfo = Players.get(name);
+    const pos = dbInfo ? dbInfo.pos : "";
+    this._draftPlayer(name, pos);
   },
 
   // ─── Public actions ───
@@ -372,7 +460,6 @@ const DraftAssistant = {
   async saveNote(playerName, text) {
     this._notes[playerName] = text;
     await this._saveNote(playerName, text);
-    // No full re-render needed for notes blur
   },
 
   async removeRanking(playerName) {
@@ -415,12 +502,10 @@ const DraftAssistant = {
       return;
     }
 
-    // Merge into existing rankings
     result.rankings.forEach(r => {
       this._rankings[r.name] = { rank: r.rank, tier: r.tier || null, pos: r.pos || null };
     });
 
-    // Batch save
     const ref = this._ref("/rankings");
     if (!ref) return;
     const encoded = {};
@@ -433,7 +518,6 @@ const DraftAssistant = {
       console.error("Failed to save rankings:", e);
     }
 
-    // Reset the file input
     input.value = "";
     this._tab = "rankings";
     this._renderPanel();
@@ -474,7 +558,6 @@ const DraftAssistant = {
       });
     }
 
-    // Sort by rank ascending
     rankings.sort((a, b) => a.rank - b.rank);
     return { rankings };
   },
@@ -519,7 +602,6 @@ const DraftAssistant = {
     if (input) input.value = p.name;
     document.getElementById("da-add-autocomplete")?.classList.add("hidden");
     this._addResults = [];
-    // Auto-fill rank as next available
     const rankInput = document.getElementById("da-add-rank");
     if (rankInput && !rankInput.value) {
       rankInput.value = Object.keys(this._rankings).length + 1;
@@ -544,21 +626,32 @@ const DraftAssistant = {
     else if (this._rankSort === "name") list.sort((a, b) => a.name.localeCompare(b.name));
     else if (this._rankSort === "pos")  list.sort((a, b) => (a.pos || "ZZZ").localeCompare(b.pos || "ZZZ") || a.rank - b.rank);
     else if (this._rankSort === "flag") {
-      const flagOrder = { mustHave: 0, want: 1, interested: 2, avoid: 3, undefined: 4 };
+      const flagOrder = { mustHave: 0, want: 1, interested: 2, avoid: 3 };
       list.sort((a, b) => (flagOrder[this._flags[a.name]] ?? 4) - (flagOrder[this._flags[b.name]] ?? 4) || a.rank - b.rank);
     }
 
     return list;
   },
 
+  // ─── Drafted player set (uppercase, stripped of ", POS" suffix) ───
+  _getDraftedSet() {
+    const drafted = State.draftedPlayers();
+    const set = new Set();
+    drafted.forEach(d => {
+      set.add(d.toUpperCase());
+      // Also add the clean name without ", POS" suffix
+      set.add(d.replace(/,\s*(QB|RB|WR|TE|K|DEF|DST)\s*$/i, "").trim().toUpperCase());
+    });
+    return set;
+  },
+
   // ─── Best Available Suggestion ───
   _getBestAvailable() {
     if (Object.keys(this._rankings).length === 0 && Object.keys(this._flags).length === 0) return null;
 
-    const drafted = State.draftedPlayers().map(d => d.toUpperCase());
-    const isDrafted = name => drafted.some(d => d === name.toUpperCase());
+    const drafted = this._getDraftedSet();
+    const isDrafted = name => drafted.has(name.toUpperCase());
 
-    // Pool: all ranked players + flagged must-have/want players not yet in rankings
     const pool = new Map();
 
     Object.entries(this._rankings).forEach(([name, data]) => {
@@ -567,7 +660,6 @@ const DraftAssistant = {
       }
     });
 
-    // Include flagged players not in rankings
     Object.entries(this._flags).forEach(([name, flag]) => {
       if (!pool.has(name) && !isDrafted(name) && (flag === "mustHave" || flag === "want")) {
         pool.set(name, { name, rank: 9999, pos: Players.get(name)?.pos || "" });
@@ -576,7 +668,6 @@ const DraftAssistant = {
 
     if (pool.size === 0) return null;
 
-    // Sort by flag priority first, then rank
     const flagPriority = { mustHave: 0, want: 1, interested: 2 };
     const sorted = [...pool.values()].sort((a, b) => {
       const fa = flagPriority[this._flags[a.name]] ?? 3;
@@ -598,18 +689,14 @@ const DraftAssistant = {
   // ─── Draft directly from assistant ───
   _draftPlayer(name, pos) {
     const formatted = pos ? `${name}, ${pos}` : name;
-    // Close assistant panel
     this.close();
-    // Open draft modal pre-filled
-    const pickIndex = this._selectedPickIndex != null ? this._selectedPickIndex : State.currentPickIndex;
-    Modals.openDraftAt(pickIndex !== -1 ? pickIndex : State.currentPickIndex);
-    // Pre-fill input after modal renders
+    const pickIndex = State.currentPickIndex;
+    Modals.openDraftAt(pickIndex);
     setTimeout(() => {
       const input = document.getElementById("draft-player-input");
       if (input) {
         input.value = formatted;
         Modals.onDraftSearch(name);
-        // Auto-select if found in results
         setTimeout(() => {
           const results = Modals._draftResults;
           const idx = results.findIndex(r => r.name.toUpperCase() === name.toUpperCase());
@@ -619,28 +706,21 @@ const DraftAssistant = {
     }, 80);
   },
 
-  // Keep track of pick index for direct draft
-  _selectedPickIndex: null,
-
   // ─── Board Overlay ───
-  // Inject flag indicators onto pick cells — only visible to the flagging user
   renderBoardOverlay() {
     if (!Auth.user || !this._loaded) return;
 
-    // Remove any existing overlays
     document.querySelectorAll(".da-board-flag").forEach(el => el.remove());
 
     const flaggedNames = Object.keys(this._flags);
     if (flaggedNames.length === 0) return;
 
-    // Build a lookup: clean uppercase name → flag
     const flagMap = {};
     flaggedNames.forEach(name => {
       flagMap[name.toUpperCase()] = this._flags[name];
     });
 
-    // Walk all filled pick cells
-    State.picks.forEach((pick, idx) => {
+    State.picks.forEach((pick) => {
       if (!pick.player) return;
       const cleanName = pick.player.replace(/,\s*(QB|RB|WR|TE|K|DEF|DST)\s*$/i, "").trim().toUpperCase();
       const flag = flagMap[cleanName];
@@ -649,14 +729,9 @@ const DraftAssistant = {
       const cfg = this.FLAGS[flag];
       if (!cfg) return;
 
-      // Find the pick's DOM element
-      // Board cells are rendered in round/team order — we find by data that's in the inner div
-      // The pick-overall span uniquely identifies the cell
-      const cells = document.querySelectorAll(".pick.is-filled");
-      cells.forEach(cell => {
+      document.querySelectorAll(".pick.is-filled").forEach(cell => {
         const overallEl = cell.querySelector(".pick-overall");
         if (overallEl && parseInt(overallEl.textContent) === pick.overall) {
-          // Don't double-add
           if (cell.querySelector(".da-board-flag")) return;
           const badge = document.createElement("span");
           badge.className = "da-board-flag";
@@ -669,11 +744,9 @@ const DraftAssistant = {
   },
 
   // ─── Autocomplete flag injection ───
-  // Called by Modals.onDraftSearch to annotate search results with private flags
   injectFlags(resultsHTML, results) {
     if (!Auth.user || !this._loaded || Object.keys(this._flags).length === 0) return resultsHTML;
 
-    // Rebuild each result item with flag indicator injected
     return results.map((p, i) => {
       const flag = this._flags[p.name];
       const flagBadge = flag
@@ -698,7 +771,6 @@ const DraftAssistant = {
 
   // ─── Init ───
   init() {
-    // Listen for state changes to refresh suggestion + overlay
     State.onChange(() => {
       if (this._open) this._renderPanel();
       if (this._loaded) this.renderBoardOverlay();
@@ -706,7 +778,6 @@ const DraftAssistant = {
   },
 };
 
-// ─── Boot ───
 document.addEventListener("DOMContentLoaded", () => {
   DraftAssistant.init();
 });
