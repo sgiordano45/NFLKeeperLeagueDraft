@@ -51,6 +51,16 @@
     <div id="team-panel-body" class="tp-body"></div>
   </aside>
 
+  <!-- ─── DRAFT ASSISTANT PANEL (slide-in sidebar) ─── -->
+  <div id="da-overlay" class="hidden" onclick="DraftAssistant.close()"></div>
+  <aside id="da-panel">
+    <div class="da-header">
+      <span class="da-title">🎯 My Draft Board</span>
+      <button class="da-close-btn" onclick="DraftAssistant.close()">✕</button>
+    </div>
+    <div id="da-body"></div>
+  </aside>
+
   <!-- ─── MODAL BACKDROP ─── -->
   <div id="modal-backdrop" class="modal-backdrop hidden">
     <div id="modal" class="modal" role="dialog">
@@ -133,6 +143,7 @@
   <script src="js/export.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/mock-draft.js"></script>
+  <script src="js/draft-assistant.js"></script>
   <script src="js/app.js"></script>
 
   <!-- ─── MOCK DRAFT ─── -->

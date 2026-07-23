@@ -2416,3 +2416,484 @@ body.lm-shake {
   border-color: var(--gold);
   color: #000;
 }
+
+/* ══════════════════════════════════════════
+   ─── DRAFT ASSISTANT PANEL ───
+   ══════════════════════════════════════════ */
+
+/* Slide-in panel (same pattern as team-panel) */
+#da-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 380px;
+  max-width: 96vw;
+  height: 100vh;
+  background: var(--bg-surface);
+  border-left: 2px solid var(--border);
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform .25s cubic-bezier(.4,0,.2,1);
+  overflow: hidden;
+}
+
+#da-panel.is-open {
+  transform: translateX(0);
+  box-shadow: -8px 0 40px rgba(0,0,0,.5);
+}
+
+#da-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 499;
+}
+
+/* Panel header */
+.da-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 2px solid var(--gold);
+  background: linear-gradient(90deg, var(--bg-deep), var(--bg-surface));
+  flex-shrink: 0;
+}
+
+.da-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--gold);
+}
+
+.da-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 20px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color .12s;
+}
+.da-close-btn:hover { color: var(--text-primary); }
+
+/* Tabs */
+.da-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.da-tab {
+  flex: 1;
+  padding: 9px 4px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color .12s, border-color .12s;
+}
+.da-tab:hover { color: var(--text-secondary); }
+.da-tab-active {
+  color: var(--gold) !important;
+  border-bottom-color: var(--gold);
+}
+
+/* Scrollable body */
+#da-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.da-content {
+  padding: 0 12px 20px;
+}
+
+/* Best Available suggestion strip */
+.da-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255,193,7,.08);
+  border-bottom: 1px solid rgba(255,193,7,.2);
+  flex-shrink: 0;
+}
+
+.da-suggestion-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--gold);
+  white-space: nowrap;
+}
+
+.da-suggestion-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.da-suggestion-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Upload section */
+.da-upload-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.da-upload-label {
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: var(--gold);
+  background: rgba(255,193,7,.1);
+  border: 1px solid rgba(255,193,7,.3);
+  padding: 5px 12px;
+  border-radius: 6px;
+  transition: background .12s;
+  white-space: nowrap;
+}
+.da-upload-label:hover { background: rgba(255,193,7,.2); }
+
+.da-upload-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Manual add row */
+.da-manual-add {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  align-items: center;
+}
+
+.da-manual-add .form-input {
+  flex: 1;
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+.da-rank-input {
+  width: 64px !important;
+  flex: 0 0 64px !important;
+}
+
+.da-manual-add #da-add-autocomplete {
+  position: absolute;
+  top: 100%;
+  left: 12px;
+  right: 12px;
+  z-index: 600;
+}
+
+/* Sort bar */
+.da-sort-bar {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.da-sort-btn {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .12s;
+}
+.da-sort-btn:hover { color: var(--text-secondary); }
+.da-sort-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #000 !important;
+}
+
+/* Rankings list */
+.da-rank-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.da-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border-light);
+  flex-wrap: wrap;
+  transition: background .1s;
+}
+.da-rank-row:hover { background: var(--bg-card); }
+
+.da-drafted {
+  opacity: .45;
+}
+
+.da-rank-num {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.da-rank-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.da-rank-pos {
+  font-size: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+}
+.da-rank-pos.pos-qb { background: rgba(59,130,246,.25); color: #93c5fd; }
+.da-rank-pos.pos-rb { background: rgba(34,197,94,.2);   color: #86efac; }
+.da-rank-pos.pos-wr { background: rgba(168,85,247,.2);  color: #d8b4fe; }
+.da-rank-pos.pos-te { background: rgba(245,158,11,.2);  color: #fcd34d; }
+
+.da-drafted-tag {
+  font-size: 9px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--danger);
+  background: rgba(230,57,70,.15);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.da-rank-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.da-draft-btn {
+  font-size: 10px !important;
+  padding: 2px 8px !important;
+}
+
+.da-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  transition: color .12s;
+}
+.da-remove-btn:hover { color: var(--danger); }
+
+.da-inline-note {
+  width: 100%;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+  padding-left: 36px;
+}
+
+/* Flag selector */
+.da-flag-selector {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.da-flag-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 14px;
+  cursor: pointer;
+  opacity: .4;
+  transition: opacity .12s, border-color .12s, background .12s;
+  line-height: 1.4;
+}
+.da-flag-btn:hover { opacity: .8; }
+.da-flag-active {
+  opacity: 1 !important;
+  background: var(--bg-elevated);
+  border-color: var(--border) !important;
+}
+.da-flag-clear {
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: .6;
+}
+
+/* Flags tab */
+.da-flag-group {
+  padding: 10px 12px 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.da-flag-group-header {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.da-flag-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.da-flag-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.da-flag-player-name {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.da-flag-rank {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Notes tab */
+.da-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.da-note-row {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.da-note-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.da-note-player {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.da-note-input {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: var(--font-body);
+  padding: 6px 8px;
+  resize: vertical;
+  transition: border-color .12s;
+}
+.da-note-input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+/* Empty state */
+.da-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 32px 16px;
+  line-height: 1.6;
+}
+
+/* Board overlay flag badge */
+.da-board-flag {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 10;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.6));
+}
+
+/* Make pick cells position:relative so the badge can anchor */
+.pick {
+  position: relative;
+}
+
+/* Draft autocomplete flag badge */
+.da-ac-flag {
+  margin-left: 5px;
+  font-size: 13px;
+  vertical-align: middle;
+}

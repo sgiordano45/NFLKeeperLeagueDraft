@@ -330,7 +330,8 @@ const Modals = {
       return;
     }
 
-    ac.innerHTML = this._draftResults.map((p, i) => `
+    // Build autocomplete HTML — inject DA flags if Draft Assistant is loaded
+    const baseHTML = this._draftResults.map((p, i) => `
       <div class="ac-item ${i === this._draftAutoIdx ? 'ac-active' : ''}"
         onmousedown="Modals.selectDraftPlayer(${i})"
         onmouseenter="Modals._draftAutoIdx=${i};Modals._highlightAC()">
@@ -343,6 +344,9 @@ const Modals = {
         </span>
       </div>
     `).join('');
+    ac.innerHTML = (typeof DraftAssistant !== "undefined" && DraftAssistant._loaded)
+      ? DraftAssistant.injectFlags(baseHTML, this._draftResults)
+      : baseHTML;
     ac.classList.remove("hidden");
   },
 

@@ -31,6 +31,7 @@ const UI = {
         ${isComm ? `<button class="btn" onclick="Modals.openManageClaims()">Manage Owners</button>` : ''}
         ${isComm ? `<button class="btn btn-success btn-sm" onclick="App.applyTrades()">Apply Trades</button>` : ''}
         ${Auth.hasTeam() ? `<button class="btn" onclick="TeamPanel.toggle()">My Team</button>` : ''}
+        ${Auth.user ? `<button class="btn" onclick="DraftAssistant.toggle()">🎯 My Board</button>` : ''}
         <button id="mock-draft-nav-btn" class="btn">🏈 Mock Draft</button>
         <button class="btn btn-gold" onclick="App.startDraft()">Start Draft</button>
         <button class="btn btn-danger btn-sm" onclick="App.resetDraft()">Reset</button>
@@ -56,6 +57,7 @@ const UI = {
         <button class="btn" onclick="Modals.openTimerSummary()">Timer</button>
         <button class="btn" onclick="TradeAnalyzer.open()">Trade Analyzer</button>
         ${Auth.hasTeam() ? `<button class="btn" onclick="TeamPanel.toggle()">My Team</button>` : ''}
+        ${Auth.user ? `<button class="btn" onclick="DraftAssistant.toggle()">🎯 My Board</button>` : ''}
         <button id="mock-draft-nav-btn" class="btn">🏈 Mock Draft</button>
         ${isComm ? `<button class="btn" onclick="Modals.openAdminPanel()">Admin</button>` : ''}
         ${resetBtn}
@@ -71,6 +73,7 @@ const UI = {
         <button class="btn" onclick="App.undoLast()">Undo Last</button>
         <button class="btn" onclick="TradeAnalyzer.open()">Trade Analyzer</button>
         ${Auth.hasTeam() ? `<button class="btn" onclick="TeamPanel.toggle()">My Team</button>` : ''}
+        ${Auth.user ? `<button class="btn" onclick="DraftAssistant.toggle()">🎯 My Board</button>` : ''}
         <button id="mock-draft-nav-btn" class="btn">🏈 Mock Draft</button>
         ${isComm ? `<button class="btn" onclick="Modals.openAdminPanel()">Admin</button>` : ''}
         ${resetBtn}
@@ -177,6 +180,11 @@ const UI = {
     }
 
     tbody.innerHTML = bodyHTML;
+
+    // Refresh Draft Assistant board overlay (private flags, only visible to their owner)
+    if (typeof DraftAssistant !== "undefined" && DraftAssistant._loaded) {
+      DraftAssistant.renderBoardOverlay();
+    }
   },
 
   // ─── ON THE CLOCK BANNER ───
