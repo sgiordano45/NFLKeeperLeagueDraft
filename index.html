@@ -132,6 +132,20 @@
   <script src="js/landmines.js"></script>
   <script src="js/export.js"></script>
   <script src="js/audio.js"></script>
+  <script src="js/mock-draft.js"></script>
   <script src="js/app.js"></script>
+
+  <!-- ─── MOCK DRAFT ─── -->
+  <div id="mock-draft-backdrop" class="mock-backdrop hidden"></div>
+  <div id="mock-draft-modal" class="mock-modal hidden">
+    <div class="mock-header">
+      <span class="mock-header-title">🏈 Mock Draft</span>
+      <div class="mock-header-actions">
+        <button class="btn btn-sm" onclick="MockDraft.reset()">↺ Reset</button>
+        <button class="btn btn-sm" onclick="MockDraft.close()">✕ Exit</button>
+      </div>
+    </div>
+    <div id="mock-draft-body" class="mock-draft-body"></div>
+  </div>
 </body>
 </html>

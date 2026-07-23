@@ -56,6 +56,11 @@ const App = {
       }
     });
 
+    // Wire up mock draft button (injected into nav by UI.render)
+    document.getElementById("header-nav").addEventListener("click", e => {
+      if (e.target.id === "mock-draft-nav-btn") MockDraft.open();
+    });
+
     console.log(`Fantasy Draft Board initialized. Role: ${Auth.role}`);
   },
 
