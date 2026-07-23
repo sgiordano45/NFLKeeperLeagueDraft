@@ -62,13 +62,28 @@ const DraftAssistant = {
     return window.db.ref(`draftAssistant/${uid}${sub}`);
   },
 
-  // Encode player name for use as a Firebase key (replace disallowed chars)
+  // Encode player name for use as a Firebase key (replace Firebase-disallowed chars).
+  // Firebase forbids: . # $ [ ] /
+  // We do NOT encode dash (-) since it appears naturally in names like Amon-Ra.
+  // # is rare in player names but must be encoded; we use a tilde (~) as stand-in.
   _key(name) {
-    return name.replace(/\./g, ",").replace(/\//g, "|").replace(/\[/g, "(").replace(/\]/g, ")").replace(/#/g, "-");
+    return name
+      .replace(/~/g, "~~")      // escape literal tildes first
+      .replace(/\./g, "~d")    // . → ~d
+      .replace(/\//g, "~s")    // / → ~s
+      .replace(/\[/g, "~l")    // [ → ~l
+      .replace(/\]/g, "~r")    // ] → ~r
+      .replace(/#/g,  "~h");   // # → ~h
   },
 
   _unkey(key) {
-    return key.replace(/,/g, ".").replace(/\|/g, "/").replace(/\(/g, "[").replace(/\)/g, "]").replace(/-/g, "#");
+    return key
+      .replace(/~h/g, "#")
+      .replace(/~r/g, "]")
+      .replace(/~l/g, "[")
+      .replace(/~s/g, "/")
+      .replace(/~d/g, ".")
+      .replace(/~~/g, "~");
   },
 
   // ─── Load from Firebase ───
@@ -192,7 +207,10 @@ const DraftAssistant = {
     })() : "";
 
     body.innerHTML = `
-      <div class="da-tabs">${tabHTML}</div>
+      <div class="da-tabs">
+        ${tabHTML}
+        <button class="da-reset-btn" onclick="DraftAssistant.resetAll()" title="Clear all flags, notes, and rankings">↺ Reset</button>
+      </div>
       ${suggHTML}
       <div class="da-content">${contentHTML}</div>
     `;
@@ -453,6 +471,23 @@ const DraftAssistant = {
   async clearFlag(playerName) {
     delete this._flags[playerName];
     await this._saveFlag(playerName, null);
+    this._renderPanel();
+    this.renderBoardOverlay();
+  },
+
+  async resetAll() {
+    if (!confirm("Clear all your flags, notes, and rankings? This cannot be undone.")) return;
+    const ref = this._ref();
+    if (!ref) return;
+    try {
+      await ref.remove();
+    } catch (e) {
+      console.error("DraftAssistant reset failed:", e);
+      return;
+    }
+    this._rankings = {};
+    this._flags = {};
+    this._notes = {};
     this._renderPanel();
     this.renderBoardOverlay();
   },

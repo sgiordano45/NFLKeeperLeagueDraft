@@ -2897,3 +2897,21 @@ body.lm-shake {
   font-size: 13px;
   vertical-align: middle;
 }
+
+/* Draft Assistant reset button (sits in tab bar) */
+.da-reset-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: 0 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color .12s;
+  border-left: 1px solid var(--border);
+}
+.da-reset-btn:hover { color: var(--danger); }
