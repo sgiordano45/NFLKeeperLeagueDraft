@@ -25,7 +25,7 @@ const MockDraft = (() => {
   // ─── Public API ───
 
   function open() {
-    if (!Auth.user && !Auth.isCommissioner()) {
+    if (!Auth.currentUser) {
       alert("You must be signed in to use Mock Draft.");
       return;
     }
@@ -57,10 +57,24 @@ const MockDraft = (() => {
 
   // ─── State Builder ───
 
-  function _buildInitialState() {
-    const geoTeam = Auth.claimedTeam || null;
+  // Keeper players may be stored as a string ("Name, POS") or a full object.
+  // Always return a normalized object { name, pos, team, bye, adp } or null.
+  function _resolvePlayer(raw) {
+    if (!raw) return null;
+    if (typeof raw === "object") return raw;
+    if (typeof raw === "string") {
+      // Format: "Patrick Mahomes, QB" or just "Patrick Mahomes"
+      const match = raw.match(/^(.+?),\s*([A-Z]+)$/);
+      if (match) return { name: match[1].trim(), pos: match[2].trim() };
+      return { name: raw.trim(), pos: "" };
+    }
+    return null;
+  }
 
-    // Clone real pick order — clear non-keeper players
+  function _buildInitialState() {
+    const geoTeam = Auth.myTeam || null;
+
+    // Clone real pick order — clear non-keeper players, normalize keeper objects
     const picks = State.picks.map(p => ({
       overall:       p.overall,
       round:         p.round,
@@ -68,12 +82,15 @@ const MockDraft = (() => {
       originalOwner: p.originalOwner,
       currentOwner:  p.currentOwner,
       isKeeper:      !!p.isKeeper,
-      player:        (p.isKeeper && p.player) ? { ...p.player } : null,
+      player:        (p.isKeeper && p.player) ? _resolvePlayer(p.player) : null,
     }));
 
     // Keeper name exclusion set
     const keeperNames = new Set(
-      picks.filter(p => p.isKeeper && p.player).map(p => p.player.name.toUpperCase())
+      picks
+        .filter(p => p.isKeeper && p.player)
+        .map(p => (p.player.name || "").toUpperCase())
+        .filter(Boolean)
     );
 
     // Available pool — Players._db is ADP-sorted
