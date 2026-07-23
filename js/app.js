@@ -26,6 +26,9 @@ const App = {
     // Initialize Firebase sync
     FirebaseSync.init();
 
+    // Start listening for landmine data (syncs to all clients silently)
+    Landmines.listenForUpdates();
+
     // Load existing draft from Firebase (if any)
     const saved = await FirebaseSync.loadInitial();
     if (saved && saved.picks && saved.picks.length > 0) {
@@ -53,8 +56,11 @@ const App = {
     console.log(`Fantasy Draft Board initialized. Role: ${Auth.role}`);
   },
 
-  startDraft() {
+  async startDraft() {
     if (!Auth.canAdmin()) return;
+
+    // Generate landmines (no-ops if already set in Firebase)
+    await Landmines.generate();
 
     let firstOpen = -1;
     for (let i = 0; i < State.picks.length; i++) {

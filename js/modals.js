@@ -450,6 +450,14 @@ const Modals = {
 
     this.close();
 
+    // ─── LANDMINE CHECK ───
+    const draftingTeam = State.picks[idx]?.currentOwner || newPicks[idx]?.currentOwner;
+    const mineName = Landmines.check(player);
+    if (mineName) {
+      // Short delay so the board re-renders first, then BOOM
+      setTimeout(() => Landmines.trigger(mineName, draftingTeam), 400);
+    }
+
     // Start timer for next team if draft continues
     if (!complete) {
       const nextPick = State.picks[nextIdx];
