@@ -82,6 +82,7 @@ const App = {
     });
 
     Timer.start(State.picks[firstOpen].currentOwner);
+    AudioManager.playDraftSound();
     setTimeout(() => UI.scrollToCurrent(), 300);
   },
 

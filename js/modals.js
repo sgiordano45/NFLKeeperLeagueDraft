@@ -418,6 +418,9 @@ const Modals = {
 
     const idx = this._selectedPickIndex != null ? this._selectedPickIndex : State.currentPickIndex;
 
+    // Capture elapsed seconds for this pick BEFORE stopping the timer
+    const pickElapsed = Timer.getCurrentElapsed();
+
     // Stop timer, bank the time
     Timer.stop();
 
@@ -449,6 +452,16 @@ const Modals = {
     });
 
     this.close();
+
+    // ─── DRAFT HORN ───
+    // Round 1 pick: celebrate every selection
+    // Slow pick (>60s): audio cue that a pick finally came in
+    const completedPick = newPicks[idx];
+    const isRound1 = completedPick && completedPick.round === 1;
+    const isSlow   = pickElapsed > 60;
+    if (isRound1 || isSlow) {
+      AudioManager.playDraftSound();
+    }
 
     // ─── LANDMINE CHECK ───
     const draftingTeam = State.picks[idx]?.currentOwner || newPicks[idx]?.currentOwner;
