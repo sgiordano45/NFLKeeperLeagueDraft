@@ -1087,7 +1087,7 @@ const Modals = {
       </p>
       <button class="btn btn-danger btn-sm" onclick="Modals.resetLandmines()">Reset Landmines</button>
       <span id="landmine-reset-status" style="font-size:12px;margin-left:10px"></span>
-    \`);
+    `);
   },
 
   // ─── PRE-ASSIGN TEAMS TO EMAILS ───
