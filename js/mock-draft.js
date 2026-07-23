@@ -25,7 +25,7 @@ const MockDraft = (() => {
   // ─── Public API ───
 
   function open() {
-    if (!Auth.currentUser) {
+    if (!Auth.user && !Auth.isCommissioner()) {
       alert("You must be signed in to use Mock Draft.");
       return;
     }
@@ -58,7 +58,7 @@ const MockDraft = (() => {
   // ─── State Builder ───
 
   function _buildInitialState() {
-    const geoTeam = Auth.myTeam || null;
+    const geoTeam = Auth.claimedTeam || null;
 
     // Clone real pick order — clear non-keeper players
     const picks = State.picks.map(p => ({
